@@ -171,7 +171,7 @@ Radio:
 
 Sensors:
 
-- BMP280 at I2C address `0x76`
+- BMP280 at I2C address `0x77`
 - BMI270 at I2C address `0x68`
 - NEO-6M GPS on UART1
 
