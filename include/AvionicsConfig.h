@@ -11,7 +11,14 @@ constexpr uint32_t BeforeLaunchHeartbeatIntervalMs = 10000;
 constexpr uint32_t MeasurementIntervalMs = 20;
 
 constexpr long LoRaFrequencyHz = 433375000L;
+constexpr float LoRaFrequencyMHz = 433.375f;
+constexpr float LoRaBandwidthKHz = 125.0f;
+constexpr uint8_t LoRaSpreadingFactor = 7;
+constexpr uint8_t LoRaCodingRate = 5;
 constexpr uint8_t LoRaSyncWord = 0x67;
+constexpr int8_t LoRaTxPowerDbm = 10;
+constexpr uint16_t LoRaPreambleLength = 8;
+constexpr bool LoRaUseDio2RfSwitch = true;
 
 constexpr uint8_t I2cSdaPin = 21;
 constexpr uint8_t I2cSclPin = 22;
@@ -30,12 +37,13 @@ constexpr uint8_t LoRaSckPin = 5;
 constexpr uint8_t LoRaMisoPin = 19;
 constexpr uint8_t LoRaMosiPin = 27;
 constexpr uint8_t LoRaCsPin = 18;
-constexpr uint8_t LoRaResetPin = 14;
-constexpr uint8_t LoRaDio0Pin = 26;
+constexpr uint8_t LoRaResetPin = 23;
+constexpr uint8_t LoRaDio1Pin = 33;
+constexpr uint8_t LoRaBusyPin = 32;
 
 constexpr int TriboVoltageAdcPin = 36;
 constexpr int BatteryVoltageAdcPin = 35;
-constexpr int BreakawayWirePin = 33;
+constexpr int BreakawayWirePin = 39;
 constexpr int BuzzerPin = 25;
 
 constexpr double BaseLatitudeDeg = 49.7983333333;

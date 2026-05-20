@@ -49,7 +49,8 @@ class TelemetryService {
                                      const MeasurementSnapshot &measurement);
 
  private:
-  static void onTxDone();
+  static void IRAM_ATTR onTxDone();
+  static void serviceRadio();
   bool timeoutFired(uint32_t nowMs) const;
   static void printBytes(const uint8_t *bytes, size_t length);
   static uint16_t scalePressure(float pressurePa);
@@ -64,4 +65,5 @@ class TelemetryService {
   uint32_t nextTelemetryAtMs_ = 0;
 
   static volatile bool txInProgress_;
+  static volatile bool txDone_;
 };

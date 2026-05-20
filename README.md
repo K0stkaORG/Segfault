@@ -150,7 +150,7 @@ State transitions must use `flightFsm.setState(...)` so the new state is persist
 
 Declared in `platformio.ini`:
 
-- `sandeepmistry/LoRa`
+- `jgromes/RadioLib`
 - `adafruit/Adafruit BMP280 Library`
 - `adafruit/Adafruit Unified Sensor`
 - `sparkfun/SparkFun BMI270 Arduino Library`
@@ -165,8 +165,9 @@ Board:
 
 Radio:
 
-- SX127x LoRa module through `LoRa.h`
+- SX1262 LoRa module through RadioLib
 - SPI pins from `AvionicsConfig`
+- DIO1 and BUSY pins from `AvionicsConfig`
 - frequency `433375000 Hz`
 
 Sensors:

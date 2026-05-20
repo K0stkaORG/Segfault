@@ -6,7 +6,7 @@ The firmware currently uses source files in `src/` and external libraries declar
 
 External dependencies currently declared:
 
-- `sandeepmistry/LoRa`
+- `jgromes/RadioLib`
 - `adafruit/Adafruit BMP280 Library`
 - `adafruit/Adafruit Unified Sensor`
 - `sparkfun/SparkFun BMI270 Arduino Library`
