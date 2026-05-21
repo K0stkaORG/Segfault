@@ -10,11 +10,11 @@ constexpr uint32_t TelemetryIntervalMs = 200;
 constexpr uint32_t BeforeLaunchHeartbeatIntervalMs = 10000;
 constexpr uint32_t MeasurementIntervalMs = 20;
 
-constexpr long LoRaFrequencyHz = 433375000L;
-constexpr float LoRaFrequencyMHz = 433.375f;
-constexpr float LoRaBandwidthKHz = 125.0f;
-constexpr uint8_t LoRaSpreadingFactor = 7;
-constexpr uint8_t LoRaCodingRate = 5;
+constexpr long LoRaFrequencyHz = 439700000L;
+constexpr float LoRaFrequencyMHz = 439.7f;
+constexpr float LoRaBandwidthKHz = 250.0f;
+constexpr uint8_t LoRaSpreadingFactor = 8;
+constexpr uint8_t LoRaCodingRate = 8;
 constexpr uint8_t LoRaSyncWord = 0x67;
 constexpr int8_t LoRaTxPowerDbm = 10;
 constexpr uint16_t LoRaPreambleLength = 8;
