@@ -26,6 +26,7 @@ constexpr uint32_t I2cClockHz = 400000;
 
 constexpr uint8_t Bmp280I2cAddress = 0x77;
 constexpr uint8_t Bmi270I2cAddress = 0x68;
+constexpr uint8_t Ina226I2cAddress = 0x40;
 
 constexpr uint8_t GpsUartPort = 1;
 constexpr uint32_t GpsBaud = 9600;
@@ -41,9 +42,9 @@ constexpr uint8_t LoRaResetPin = 23;
 constexpr uint8_t LoRaDio1Pin = 33;
 constexpr uint8_t LoRaBusyPin = 32;
 
-constexpr int TriboVoltageAdcPin = 36;
 constexpr int BatteryVoltageAdcPin = 35;
-constexpr int BreakawayWirePin = 39;
+constexpr int Ky024AnalogPin = 39;
+constexpr int Ky024DigitalPin = 14;
 constexpr int BuzzerPin = 25;
 
 constexpr double BaseLatitudeDeg = 49.7983333333;

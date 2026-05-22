@@ -4,6 +4,7 @@
 #include <Wire.h>
 #include <Adafruit_BMP280.h>
 #include <TinyGPS++.h>
+#include <INA226_WE.h>
 
 extern "C" {
 #include <bmi270_api/bmi270.h>
@@ -16,6 +17,18 @@ struct Bmi270RawSample {
   int16_t gyroX = 0;
   int16_t gyroY = 0;
   int16_t gyroZ = 0;
+};
+
+struct Ky024Sample {
+  uint16_t analog = 0;
+  bool digital = false;
+};
+
+struct Ina226Sample {
+  float shuntVoltageMv = 0.0f;
+  float busVoltageV = 0.0f;
+  float currentMa = 0.0f;
+  float powerMw = 0.0f;
 };
 
 struct GpsSample {
@@ -35,14 +48,17 @@ struct MeasurementSnapshot {
   bool bmp280Ok = false;
   bool bmi270Ok = false;
   bool gpsOk = false;
+  bool ina226Ok = false;
   bool bmp280ReadOk = false;
   bool bmi270ReadOk = false;
   bool gpsReadOk = false;
+  bool ina226ReadOk = false;
   float temperatureC = 0.0f;
   float pressurePa = 0.0f;
   Bmi270RawSample imu;
   GpsSample gps;
-  uint16_t triboAdc = 0;
+  Ky024Sample ky024;
+  Ina226Sample ina226;
   uint16_t batteryAdc = 0;
 };
 
@@ -63,9 +79,11 @@ class MeasurementService {
   bool beginBmp280();
   bool beginBmi270();
   bool beginGps();
+  bool beginIna226();
   bool readBmp280();
   bool readBmi270();
   bool readGps(uint32_t nowMs);
+  bool readIna226();
 
   static BMI2_INTF_RETURN_TYPE bmi270Read(uint8_t regAddr,
                                           uint8_t *regData,
@@ -80,6 +98,7 @@ class MeasurementService {
   Adafruit_BMP280 bmp280_;
   HardwareSerial gpsSerial_;
   TinyGPSPlus gpsParser_;
+  INA226_WE ina226_;
   bmi2_dev bmi270Dev_{};
   Bmi270I2cContext bmi270Context_{};
   MeasurementSnapshot snapshot_{};

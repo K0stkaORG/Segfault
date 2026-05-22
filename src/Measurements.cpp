@@ -4,7 +4,8 @@
 #include "AvionicsConfig.h"
 
 MeasurementService::MeasurementService()
-    : gpsSerial_(AvionicsConfig::GpsUartPort) {
+    : gpsSerial_(AvionicsConfig::GpsUartPort),
+      ina226_(AvionicsConfig::Ina226I2cAddress) {
 }
 
 bool MeasurementService::begin() {
@@ -14,15 +15,16 @@ bool MeasurementService::begin() {
   snapshot_.bmp280Ok = beginBmp280();
   snapshot_.bmi270Ok = beginBmi270();
   snapshot_.gpsOk = beginGps();
+  snapshot_.ina226Ok = beginIna226();
   nextSampleAtMs_ = 0;
 
-  pinMode(AvionicsConfig::TriboVoltageAdcPin, INPUT);
   pinMode(AvionicsConfig::BatteryVoltageAdcPin, INPUT);
-  pinMode(AvionicsConfig::BreakawayWirePin, INPUT_PULLUP);
+  pinMode(AvionicsConfig::Ky024AnalogPin, INPUT);
+  pinMode(AvionicsConfig::Ky024DigitalPin, INPUT);
   pinMode(AvionicsConfig::BuzzerPin, OUTPUT);
   digitalWrite(AvionicsConfig::BuzzerPin, LOW);
 
-  return snapshot_.bmp280Ok && snapshot_.bmi270Ok && snapshot_.gpsOk;
+  return snapshot_.bmp280Ok && snapshot_.bmi270Ok && snapshot_.gpsOk && snapshot_.ina226Ok;
 }
 
 void MeasurementService::tick(uint32_t nowMs) {
@@ -31,12 +33,15 @@ void MeasurementService::tick(uint32_t nowMs) {
   }
 
   snapshot_.updatedAtMs = nowMs;
-  snapshot_.triboAdc = analogRead(AvionicsConfig::TriboVoltageAdcPin);
   snapshot_.batteryAdc = analogRead(AvionicsConfig::BatteryVoltageAdcPin);
+
+  snapshot_.ky024.analog = analogRead(AvionicsConfig::Ky024AnalogPin);
+  snapshot_.ky024.digital = (digitalRead(AvionicsConfig::Ky024DigitalPin) == HIGH);
 
   snapshot_.bmp280ReadOk = snapshot_.bmp280Ok && readBmp280();
   snapshot_.bmi270ReadOk = snapshot_.bmi270Ok && readBmi270();
   snapshot_.gpsReadOk = snapshot_.gpsOk && readGps(nowMs);
+  snapshot_.ina226ReadOk = snapshot_.ina226Ok && readIna226();
 
   nextSampleAtMs_ = nowMs + AvionicsConfig::MeasurementIntervalMs;
 }
@@ -86,6 +91,13 @@ bool MeasurementService::beginGps() {
                    SERIAL_8N1,
                    AvionicsConfig::GpsRxPin,
                    AvionicsConfig::GpsTxPin);
+  return true;
+}
+
+bool MeasurementService::beginIna226() {
+  if (!ina226_.init()) {
+    return false;
+  }
   return true;
 }
 
@@ -148,6 +160,15 @@ bool MeasurementService::readGps(uint32_t nowMs) {
 
   (void)nowMs;
   return consumedData;
+}
+
+bool MeasurementService::readIna226() {
+  ina226_.readAndClearFlags(); // necessary to clear alerts and update some internals depending on lib, but mainly we just read values
+  snapshot_.ina226.shuntVoltageMv = ina226_.getShuntVoltage_mV();
+  snapshot_.ina226.busVoltageV = ina226_.getBusVoltage_V();
+  snapshot_.ina226.currentMa = ina226_.getCurrent_mA();
+  snapshot_.ina226.powerMw = ina226_.getBusPower();
+  return true;
 }
 
 BMI2_INTF_RETURN_TYPE MeasurementService::bmi270Read(uint8_t regAddr,
