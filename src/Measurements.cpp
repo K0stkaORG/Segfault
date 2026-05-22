@@ -21,8 +21,6 @@ bool MeasurementService::begin() {
   pinMode(AvionicsConfig::BatteryVoltageAdcPin, INPUT);
   pinMode(AvionicsConfig::Ky024AnalogPin, INPUT);
   pinMode(AvionicsConfig::Ky024DigitalPin, INPUT);
-  pinMode(AvionicsConfig::BuzzerPin, OUTPUT);
-  digitalWrite(AvionicsConfig::BuzzerPin, LOW);
 
   return snapshot_.bmp280Ok && snapshot_.bmi270Ok && snapshot_.gpsOk && snapshot_.ina226Ok;
 }

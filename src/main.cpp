@@ -16,7 +16,9 @@ FlightFsm flightFsm;
 }  // namespace
 
 void setup() {
-  Serial.begin(AvionicsConfig::SerialBaud);
+  if (AvionicsConfig::EnableSerial) {
+    Serial.begin(AvionicsConfig::SerialBaud);
+  }
 
   const bool persistentOk = persistentStore.begin();
   flightFsm.attachPersistentStore(persistentStore);
@@ -31,23 +33,25 @@ void setup() {
                                  measurements.latest().gpsOk,
                                  telemetryOk);
 
-  Serial.println(F("<Testing In Production>"));
-  Serial.print(F("NVS: "));
-  Serial.println(persistentOk ? F("ok") : F("failed"));
-  Serial.print(F("Boot count: "));
-  Serial.println(persistentStore.bootCount());
-  Serial.print(F("State: "));
-  Serial.println(flightFsm.stateName());
-  Serial.print(F("BMP280: "));
-  Serial.println(measurements.latest().bmp280Ok ? F("ok") : F("missing"));
-  Serial.print(F("BMI270: "));
-  Serial.println(measurements.latest().bmi270Ok ? F("ok") : F("missing"));
-  Serial.print(F("NEO6M: "));
-  Serial.println(measurements.latest().gpsOk ? F("ok") : F("missing"));
-  Serial.print(F("Measurements: "));
-  Serial.println(measurementsOk ? F("ok") : F("degraded"));
-  Serial.print(F("LoRa: "));
-  Serial.println(telemetryOk ? F("ok") : F("failed"));
+  if (AvionicsConfig::EnableSerial) {
+    Serial.println(F("<Testing In Production>"));
+    Serial.print(F("NVS: "));
+    Serial.println(persistentOk ? F("ok") : F("failed"));
+    Serial.print(F("Boot count: "));
+    Serial.println(persistentStore.bootCount());
+    Serial.print(F("State: "));
+    Serial.println(flightFsm.stateName());
+    Serial.print(F("BMP280: "));
+    Serial.println(measurements.latest().bmp280Ok ? F("ok") : F("missing"));
+    Serial.print(F("BMI270: "));
+    Serial.println(measurements.latest().bmi270Ok ? F("ok") : F("missing"));
+    Serial.print(F("NEO6M: "));
+    Serial.println(measurements.latest().gpsOk ? F("ok") : F("missing"));
+    Serial.print(F("Measurements: "));
+    Serial.println(measurementsOk ? F("ok") : F("degraded"));
+    Serial.print(F("LoRa: "));
+    Serial.println(telemetryOk ? F("ok") : F("failed"));
+  }
 }
 
 void loop() {

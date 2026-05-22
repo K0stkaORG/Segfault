@@ -34,8 +34,10 @@ bool TelemetryService::begin() {
       radio.setDio2AsRfSwitch(true);
     }
   } else {
-    Serial.print(F("SX1262 init failed: "));
-    Serial.println(state);
+    if (AvionicsConfig::EnableSerial) {
+      Serial.print(F("SX1262 init failed: "));
+      Serial.println(state);
+    }
   }
 
   txInProgress_ = false;
@@ -102,14 +104,18 @@ bool TelemetryService::send(const RocketTelemetry &packet) {
   uint8_t *mutableBytes = const_cast<uint8_t *>(bytes);
   const int16_t state = radio.startTransmit(mutableBytes, sizeof(packet));
   if (state != RADIOLIB_ERR_NONE) {
-    Serial.print(F("SX1262 TX start failed: "));
-    Serial.println(state);
+    if (AvionicsConfig::EnableSerial) {
+      Serial.print(F("SX1262 TX start failed: "));
+      Serial.println(state);
+    }
     return false;
   }
 
   txDone_ = false;
   txInProgress_ = true;
-  printBytes(bytes, sizeof(packet));
+  if (AvionicsConfig::EnableTelemetrySerialDump) {
+    printBytes(bytes, sizeof(packet));
+  }
   packetCounter_ = packet.packetId + 1;
   return true;
 }
@@ -136,7 +142,7 @@ RocketTelemetry TelemetryService::buildPacket(
   packet.gyroZ = measurement.imu.gyroZ;
 
   packet.pressureScaled = scalePressure(measurement.pressurePa);
-  packet.triboVoltage = measurement.triboAdc;
+  packet.triboVoltage = static_cast<uint16_t>(measurement.ina226.busVoltageV * 1000.0f); // Convert V to mV
   packet.batteryVoltage = scaleBattery(measurement.batteryAdc);
 
   if (measurement.gps.locationValid) {
@@ -165,8 +171,10 @@ void TelemetryService::serviceRadio() {
   txDone_ = false;
   const int16_t state = radio.finishTransmit();
   if (state != RADIOLIB_ERR_NONE) {
-    Serial.print(F("SX1262 TX finish failed: "));
-    Serial.println(state);
+    if (AvionicsConfig::EnableSerial) {
+      Serial.print(F("SX1262 TX finish failed: "));
+      Serial.println(state);
+    }
   }
 
   txInProgress_ = false;
@@ -177,6 +185,8 @@ bool TelemetryService::timeoutFired(uint32_t nowMs) const {
 }
 
 void TelemetryService::printBytes(const uint8_t *bytes, size_t length) {
+  if (!AvionicsConfig::EnableSerial) return;
+  
   Serial.print(F("TX "));
   Serial.print(length);
   Serial.print(F(" bytes:"));

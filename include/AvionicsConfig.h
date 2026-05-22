@@ -10,6 +10,9 @@ constexpr uint32_t TelemetryIntervalMs = 200;
 constexpr uint32_t BeforeLaunchHeartbeatIntervalMs = 10000;
 constexpr uint32_t MeasurementIntervalMs = 20;
 
+constexpr bool EnableSerial = true;
+constexpr bool EnableTelemetrySerialDump = true; // DEBUG ONLY!
+
 constexpr long LoRaFrequencyHz = 439700000L;
 constexpr float LoRaFrequencyMHz = 439.7f;
 constexpr float LoRaBandwidthKHz = 250.0f;
@@ -45,7 +48,6 @@ constexpr uint8_t LoRaBusyPin = 32;
 constexpr int BatteryVoltageAdcPin = 35;
 constexpr int Ky024AnalogPin = 39;
 constexpr int Ky024DigitalPin = 14;
-constexpr int BuzzerPin = 25;
 
 constexpr double BaseLatitudeDeg = 49.7983333333;
 constexpr double BaseLongitudeDeg = 16.6866666667;
