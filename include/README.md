@@ -11,9 +11,11 @@ Central configuration for constants used across the firmware:
 - serial baud rate
 - measurement and telemetry intervals
 - LoRa frequency, sync word, and pins
+- LoRa receive buffer size
 - I2C pins, clock, and sensor addresses
 - GPS UART pins and parser budget
 - KY-024 input pins
+- parachute servo pin, pulse range, and angles
 - base GPS location
 - NVS namespace
 
@@ -22,6 +24,12 @@ Central configuration for constants used across the firmware:
 Defines `FlightState` and the `FlightFsm` class.
 
 `FlightFsm` stores the current state and persists changes after a `PersistentStore` has been attached. Use `setState()` for transitions; do not add separate state variables elsewhere.
+
+### `GroundControl.h`
+
+Defines the incoming LoRa control-packet handler.
+
+`GroundControl::handlePacket()` receives packet bytes and radio metadata from telemetry. It currently accepts fixed 4-byte servo command packets and directly calls the parachute servo without changing FSM state.
 
 ### `Measurements.h`
 
@@ -51,6 +59,12 @@ Defines the NVS wrapper used for data that must survive resets:
 Defines the FSM behavior layer.
 
 `StateLogic::tick()` receives current time, FSM state, latest measurements, and telemetry control. It currently implements the `BeforeLaunch` heartbeat behavior.
+
+### `servo.h`
+
+Defines `ServoService`, the parachute servo wrapper.
+
+`ServoService` attaches the servo to a configured control pin during startup and exposes immediate `writeAngle()`, `stow()`, and `deploy()` calls for later FSM logic.
 
 ### `Telemetry.h`
 

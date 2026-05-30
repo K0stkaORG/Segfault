@@ -3,6 +3,7 @@
 #include <RadioLib.h>
 #include <SPI.h>
 #include "AvionicsConfig.h"
+#include "GroundControl.h"
 
 namespace {
 SX1262 radio = new Module(AvionicsConfig::LoRaCsPin,
@@ -13,6 +14,7 @@ SX1262 radio = new Module(AvionicsConfig::LoRaCsPin,
 
 volatile bool TelemetryService::txInProgress_ = false;
 volatile bool TelemetryService::txDone_ = false;
+volatile bool TelemetryService::rxDone_ = false;
 
 bool TelemetryService::begin() {
   SPI.begin(AvionicsConfig::LoRaSckPin,
@@ -30,6 +32,7 @@ bool TelemetryService::begin() {
   ready_ = state == RADIOLIB_ERR_NONE;
   if (ready_) {
     radio.setPacketSentAction(TelemetryService::onTxDone);
+    radio.setPacketReceivedAction(TelemetryService::onRxDone);
     if (AvionicsConfig::LoRaUseDio2RfSwitch) {
       radio.setDio2AsRfSwitch(true);
     }
@@ -42,9 +45,12 @@ bool TelemetryService::begin() {
 
   txInProgress_ = false;
   txDone_ = false;
+  rxDone_ = false;
+  rxListening_ = false;
   enabled_ = false;
   intervalMs_ = 0;
   nextTelemetryAtMs_ = 0;
+  startReceiveIfIdle();
   return ready_;
 }
 
@@ -92,12 +98,15 @@ void TelemetryService::tick(uint32_t nowMs,
 }
 
 bool TelemetryService::send(const RocketTelemetry &packet) {
-  if (!ready_ || txInProgress_) {
-    serviceRadio();
-  }
+  serviceRadio();
 
   if (!ready_ || txInProgress_) {
     return false;
+  }
+
+  if (rxListening_) {
+    radio.standby();
+    rxListening_ = false;
   }
 
   const uint8_t *bytes = reinterpret_cast<const uint8_t *>(&packet);
@@ -165,21 +174,62 @@ void IRAM_ATTR TelemetryService::onTxDone() {
   txDone_ = true;
 }
 
+void IRAM_ATTR TelemetryService::onRxDone() {
+  rxDone_ = true;
+}
+
 void TelemetryService::serviceRadio() {
-  if (!txInProgress_ || !txDone_) {
+  if (!ready_) {
     return;
   }
 
-  txDone_ = false;
-  const int16_t state = radio.finishTransmit();
-  if (state != RADIOLIB_ERR_NONE) {
-    if (AvionicsConfig::EnableSerial) {
-      Serial.print(F("SX1262 TX finish failed: "));
+  if (txInProgress_) {
+    if (!txDone_) {
+      return;
+    }
+
+    txDone_ = false;
+    const int16_t state = radio.finishTransmit();
+    if (state != RADIOLIB_ERR_NONE) {
+      if (AvionicsConfig::EnableSerial) {
+        Serial.print(F("SX1262 TX finish failed: "));
+        Serial.println(state);
+      }
+    }
+
+    txInProgress_ = false;
+    rxListening_ = false;
+    startReceiveIfIdle();
+    return;
+  }
+
+  if (rxDone_) {
+    rxDone_ = false;
+    rxListening_ = false;
+
+    uint8_t buffer[AvionicsConfig::LoRaMaxRxPacketBytes] = {};
+    const size_t packetLength = radio.getPacketLength();
+    const size_t readLength = packetLength <= sizeof(buffer) ? packetLength : sizeof(buffer);
+    const int16_t state = radio.readData(buffer, readLength);
+
+    if (state == RADIOLIB_ERR_NONE) {
+      GroundControl::handlePacket(buffer, readLength, radio.getRSSI(), radio.getSNR());
+    } else if (AvionicsConfig::EnableSerial) {
+      Serial.print(F("SX1262 RX failed: "));
       Serial.println(state);
     }
   }
 
-  txInProgress_ = false;
+  startReceiveIfIdle();
+}
+
+void TelemetryService::startReceiveIfIdle() {
+  if (!ready_ || txInProgress_ || rxListening_) {
+    return;
+  }
+
+  const int16_t state = radio.startReceive();
+  rxListening_ = state == RADIOLIB_ERR_NONE;
 }
 
 bool TelemetryService::timeoutFired(uint32_t nowMs) const {

@@ -51,7 +51,9 @@ class TelemetryService {
 
  private:
   static void IRAM_ATTR onTxDone();
-  static void serviceRadio();
+  static void IRAM_ATTR onRxDone();
+  void serviceRadio();
+  void startReceiveIfIdle();
   bool timeoutFired(uint32_t nowMs) const;
   static void printBytes(const uint8_t *bytes, size_t length);
   static uint16_t scalePressure(float pressurePa);
@@ -67,4 +69,6 @@ class TelemetryService {
 
   static volatile bool txInProgress_;
   static volatile bool txDone_;
+  static volatile bool rxDone_;
+  bool rxListening_ = false;
 };

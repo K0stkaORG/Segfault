@@ -22,6 +22,11 @@ constexpr uint8_t LoRaSyncWord = 0x67;
 constexpr int8_t LoRaTxPowerDbm = 10;
 constexpr uint16_t LoRaPreambleLength = 8;
 constexpr bool LoRaUseDio2RfSwitch = true;
+constexpr size_t LoRaMaxRxPacketBytes = 4;
+
+constexpr uint16_t GroundControlPacketMagic = 0x4347;
+constexpr uint8_t GroundControlCommandStowServo = 0x55;
+constexpr uint8_t GroundControlCommandDeployServo = 0xAA;
 
 constexpr uint8_t I2cSdaPin = 21;
 constexpr uint8_t I2cSclPin = 22;
@@ -45,8 +50,17 @@ constexpr uint8_t LoRaResetPin = 23;
 constexpr uint8_t LoRaDio1Pin = 33;
 constexpr uint8_t LoRaBusyPin = 32;
 
-constexpr int Ky024AnalogPin = 4;
+constexpr int Ky024AnalogPin = 39;
 constexpr int Ky024DigitalPin = 14;
+
+constexpr int ParachuteServoPin = 13;
+constexpr int ParachuteServoMinPulseUs = 500;
+constexpr int ParachuteServoMaxPulseUs = 2400;
+constexpr int ParachuteServoMinAngle = 0;
+constexpr int ParachuteServoMaxAngle = 180;
+constexpr int ParachuteServoStowedAngle = 0;
+constexpr int ParachuteServoDeployedAngle = 90;
+constexpr int ParachuteServoFrequencyHz = 50;
 
 constexpr double BaseLatitudeDeg = 49.7983333333;
 constexpr double BaseLongitudeDeg = 16.6866666667;

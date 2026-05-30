@@ -12,9 +12,10 @@ Firmware skeleton for a TTGO T-Beam ESP32 used as rocket avionics. The current c
 4. Restore the saved FSM state, defaulting to `BeforeLaunch` if no valid state exists.
 5. Restore the telemetry packet counter.
 6. Initialize measurements: BMP280, BMI270, NEO-6M GPS UART, INA226, AXP2101 PMU, and KY-024 inputs.
-7. Initialize LoRa telemetry.
-8. Save current hardware init status into NVS.
-9. In `loop()`:
+7. Initialize the parachute servo at the configured stowed angle.
+8. Initialize LoRa telemetry.
+9. Save current hardware init status into NVS.
+10. In `loop()`:
    - `measurements.tick(nowMs)`
    - `stateLogic.tick(nowMs, flightFsm, measurements.latest(), telemetry)`
    - `telemetry.tick(nowMs, flightFsm, measurements.latest(), persistentStore)`
@@ -97,9 +98,33 @@ Current `BeforeLaunch` behavior:
 - keep the current FSM state unchanged
 - set telemetry to `BeforeLaunchHeartbeatIntervalMs`
 
+### `ServoService`
+
+Owns the parachute deployment servo.
+
+Current behavior:
+
+- attaches the servo once during startup on `ParachuteServoPin`
+- sets the servo to `ParachuteServoStowedAngle`
+- exposes `writeAngle(angle)`, `stow()`, and `deploy()`
+
+The servo API is immediate and does not use delays or sweep loops.
+
+### `GroundControl`
+
+Owns incoming LoRa control-packet handling.
+
+Current behavior:
+
+- receives decoded LoRa packet bytes from `TelemetryService`
+- accepts fixed 4-byte control packets with magic, command, and reserved byte
+- directly calls parachute servo `stow()` or `deploy()` for valid commands
+- does not change FSM state or flight logic
+- prints received control bytes and radio metadata to Serial only when Serial output is enabled
+
 ### `Telemetry`
 
-Owns LoRa setup, telemetry packet packing, send scheduling, packet counter management, and packet-counter persistence after successful send.
+Owns LoRa setup, incoming control packet receive scheduling, telemetry packet packing, send scheduling, packet counter management, and packet-counter persistence after successful send.
 
 Current packet format is the packed `RocketTelemetry` struct from `defvals.txt`. It is checked with:
 
@@ -115,9 +140,9 @@ Telemetry scheduling is controlled by:
 - `telemetry.disable()`
 - `telemetry.tick(nowMs, fsm, measurement, persistentStore)`
 
-`TelemetryService::tick()` checks whether the timeout has fired, builds a packet from the latest FSM state and measurement snapshot, sends it over LoRa, and persists the packet counter after successful send.
+`TelemetryService::tick()` first services the radio, including completed TX and completed RX packets. It then checks whether the telemetry timeout has fired, builds a packet from the latest FSM state and measurement snapshot, sends it over LoRa, and persists the packet counter after successful send.
 
-Transmission uses RadioLib `startTransmit()` with the SX1262 packet-sent callback. Every accepted packet is also printed to Serial as a hex byte dump.
+Transmission uses RadioLib `startTransmit()` with the SX1262 packet-sent callback. RX uses RadioLib `startReceive()` with the SX1262 packet-received callback whenever TX is not in progress. Every accepted TX packet is also printed to Serial as a hex byte dump.
 
 ## Non-Blocking Behavior
 
@@ -127,6 +152,7 @@ Bounded/non-blocking parts:
 
 - telemetry is scheduled by timestamp
 - LoRa TX uses RadioLib async `startTransmit()`
+- LoRa RX uses RadioLib async `startReceive()` while the radio is not transmitting
 - GPS parser consumes at most `MaxGpsBytesPerTick` bytes per measurement tick
 - missing sensors do not stop the firmware
 
@@ -161,6 +187,7 @@ Declared in `platformio.ini`:
 - `mikalhart/TinyGPSPlus`
 - `wollewald/INA226_WE`
 - `lewisxhe/XPowersLib`
+- `madhephaestus/ESP32Servo`
 
 ## Current Hardware Assumptions
 
@@ -186,9 +213,10 @@ Sensors:
 
 Inputs/outputs:
 
-- KY-024 analog input: `GPIO4`
+- KY-024 analog input: `GPIO39`
 - KY-024 digital input: `GPIO14`
+- parachute servo signal: `GPIO13`
 
 ## Current Limitations
 
-No flight detection, RBF logic, apogee detection, parachute deployment, buzzer behavior, filtering, or calibration logic has been implemented yet.
+No flight detection, RBF logic, apogee detection, automatic parachute deployment decision, buzzer behavior, filtering, or calibration logic has been implemented yet.

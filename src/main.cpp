@@ -2,8 +2,10 @@
 
 #include "AvionicsConfig.h"
 #include "FlightFsm.h"
+#include "GroundControl.h"
 #include "Measurements.h"
 #include "PersistentStore.h"
+#include "servo.h"
 #include "StateLogic.h"
 #include "Telemetry.h"
 
@@ -11,6 +13,7 @@ namespace {
 PersistentStore persistentStore;
 MeasurementService measurements;
 TelemetryService telemetry;
+ServoService parachuteServo;
 StateLogic stateLogic;
 FlightFsm flightFsm;
 }  // namespace
@@ -26,6 +29,8 @@ void setup() {
   telemetry.setPacketCounter(persistentStore.loadPacketCounter());
 
   const bool measurementsOk = measurements.begin();
+  const bool servoOk = parachuteServo.begin(AvionicsConfig::ParachuteServoPin);
+  GroundControl::attachServo(parachuteServo);
   const bool telemetryOk = telemetry.begin();
 
   persistentStore.saveInitStatus(measurements.latest().bmp280Ok,
@@ -49,6 +54,8 @@ void setup() {
     Serial.println(measurements.latest().gpsOk ? F("ok") : F("missing"));
     Serial.print(F("AXP2101: "));
     Serial.println(measurements.latest().pmuOk ? F("ok") : F("missing"));
+    Serial.print(F("Parachute servo: "));
+    Serial.println(servoOk ? F("ok") : F("failed"));
     Serial.print(F("Measurements: "));
     Serial.println(measurementsOk ? F("ok") : F("degraded"));
     Serial.print(F("LoRa: "));
