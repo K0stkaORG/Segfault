@@ -31,8 +31,6 @@ bool TelemetryService::begin() {
                                     AvionicsConfig::LoRaPreambleLength);
   ready_ = state == RADIOLIB_ERR_NONE;
   if (ready_) {
-    radio.setPacketSentAction(TelemetryService::onTxDone);
-    radio.setPacketReceivedAction(TelemetryService::onRxDone);
     if (AvionicsConfig::LoRaUseDio2RfSwitch) {
       radio.setDio2AsRfSwitch(true);
     }
@@ -105,10 +103,12 @@ bool TelemetryService::send(const RocketTelemetry &packet) {
   }
 
   if (rxListening_) {
+    rxDone_ = false;
     radio.standby();
     rxListening_ = false;
   }
 
+  radio.setPacketSentAction(TelemetryService::onTxDone);
   const uint8_t *bytes = reinterpret_cast<const uint8_t *>(&packet);
   uint8_t *mutableBytes = const_cast<uint8_t *>(bytes);
   const int16_t state = radio.startTransmit(mutableBytes, sizeof(packet));
@@ -228,6 +228,7 @@ void TelemetryService::startReceiveIfIdle() {
     return;
   }
 
+  radio.setPacketReceivedAction(TelemetryService::onRxDone);
   const int16_t state = radio.startReceive();
   rxListening_ = state == RADIOLIB_ERR_NONE;
 }
