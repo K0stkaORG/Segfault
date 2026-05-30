@@ -143,7 +143,7 @@ RocketTelemetry TelemetryService::buildPacket(
 
   packet.pressureScaled = scalePressure(measurement.pressurePa);
   packet.triboVoltage = static_cast<uint16_t>(measurement.ina226.busVoltageV * 1000.0f); // Convert V to mV
-  packet.batteryVoltage = scaleBattery(measurement.batteryAdc);
+  packet.batteryVoltage = scaleBatteryMilliVolts(measurement.batteryMilliVolts);
 
   if (measurement.gps.locationValid) {
     packet.gpsLatOffset = scaleGpsOffset(
@@ -155,6 +155,8 @@ RocketTelemetry TelemetryService::buildPacket(
   if (measurement.gps.altitudeValid) {
     packet.gpsAltMeters = clampInt16(measurement.gps.altitudeMeters);
   }
+
+  packet.ky024Analog = measurement.ky024.analog;
 
   return packet;
 }
@@ -215,8 +217,13 @@ uint16_t TelemetryService::scalePressure(float pressurePa) {
   return static_cast<uint16_t>(scaled + 0.5f);
 }
 
-uint8_t TelemetryService::scaleBattery(uint16_t rawBatteryAdc) {
-  return static_cast<uint8_t>(rawBatteryAdc >> 4);
+uint8_t TelemetryService::scaleBatteryMilliVolts(uint16_t batteryMilliVolts) {
+  const uint16_t scaled = (batteryMilliVolts + 10U) / 20U;
+  if (scaled > 255U) {
+    return 255;
+  }
+
+  return static_cast<uint8_t>(scaled);
 }
 
 int16_t TelemetryService::scaleGpsOffset(double offsetDeg) {

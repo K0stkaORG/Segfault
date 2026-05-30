@@ -16,13 +16,14 @@ bool MeasurementService::begin() {
   snapshot_.bmi270Ok = beginBmi270();
   snapshot_.gpsOk = beginGps();
   snapshot_.ina226Ok = beginIna226();
+  snapshot_.pmuOk = beginPmu();
   nextSampleAtMs_ = 0;
 
-  pinMode(AvionicsConfig::BatteryVoltageAdcPin, INPUT);
   pinMode(AvionicsConfig::Ky024AnalogPin, INPUT);
   pinMode(AvionicsConfig::Ky024DigitalPin, INPUT);
 
-  return snapshot_.bmp280Ok && snapshot_.bmi270Ok && snapshot_.gpsOk && snapshot_.ina226Ok;
+  return snapshot_.bmp280Ok && snapshot_.bmi270Ok && snapshot_.gpsOk &&
+         snapshot_.ina226Ok && snapshot_.pmuOk;
 }
 
 void MeasurementService::tick(uint32_t nowMs) {
@@ -31,7 +32,6 @@ void MeasurementService::tick(uint32_t nowMs) {
   }
 
   snapshot_.updatedAtMs = nowMs;
-  snapshot_.batteryAdc = analogRead(AvionicsConfig::BatteryVoltageAdcPin);
 
   snapshot_.ky024.analog = analogRead(AvionicsConfig::Ky024AnalogPin);
   snapshot_.ky024.digital = (digitalRead(AvionicsConfig::Ky024DigitalPin) == HIGH);
@@ -40,6 +40,7 @@ void MeasurementService::tick(uint32_t nowMs) {
   snapshot_.bmi270ReadOk = snapshot_.bmi270Ok && readBmi270();
   snapshot_.gpsReadOk = snapshot_.gpsOk && readGps(nowMs);
   snapshot_.ina226ReadOk = snapshot_.ina226Ok && readIna226();
+  snapshot_.pmuReadOk = snapshot_.pmuOk && readPmu();
 
   nextSampleAtMs_ = nowMs + AvionicsConfig::MeasurementIntervalMs;
 }
@@ -97,6 +98,19 @@ bool MeasurementService::beginIna226() {
     return false;
   }
   return true;
+}
+
+bool MeasurementService::beginPmu() {
+  if (!pmu_.begin(Wire,
+                  AXP2101_SLAVE_ADDRESS,
+                  AvionicsConfig::I2cSdaPin,
+                  AvionicsConfig::I2cSclPin)) {
+    return false;
+  }
+
+  const bool detectionOk = pmu_.enableBattDetection();
+  const bool voltageMeasureOk = pmu_.enableBattVoltageMeasure();
+  return detectionOk && voltageMeasureOk;
 }
 
 bool MeasurementService::readBmp280() {
@@ -167,6 +181,16 @@ bool MeasurementService::readIna226() {
   snapshot_.ina226.currentMa = ina226_.getCurrent_mA();
   snapshot_.ina226.powerMw = ina226_.getBusPower();
   return true;
+}
+
+bool MeasurementService::readPmu() {
+  if (!pmu_.isBatteryConnect()) {
+    snapshot_.batteryMilliVolts = 0;
+    return false;
+  }
+
+  snapshot_.batteryMilliVolts = pmu_.getBattVoltage();
+  return snapshot_.batteryMilliVolts > 0;
 }
 
 BMI2_INTF_RETURN_TYPE MeasurementService::bmi270Read(uint8_t regAddr,

@@ -47,6 +47,8 @@ void setup() {
     Serial.println(measurements.latest().bmi270Ok ? F("ok") : F("missing"));
     Serial.print(F("NEO6M: "));
     Serial.println(measurements.latest().gpsOk ? F("ok") : F("missing"));
+    Serial.print(F("AXP2101: "));
+    Serial.println(measurements.latest().pmuOk ? F("ok") : F("missing"));
     Serial.print(F("Measurements: "));
     Serial.println(measurementsOk ? F("ok") : F("degraded"));
     Serial.print(F("LoRa: "));

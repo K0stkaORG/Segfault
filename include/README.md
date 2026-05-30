@@ -13,7 +13,7 @@ Central configuration for constants used across the firmware:
 - LoRa frequency, sync word, and pins
 - I2C pins, clock, and sensor addresses
 - GPS UART pins and parser budget
-- ADC, breakaway, and buzzer pin placeholders
+- KY-024 input pins
 - base GPS location
 - NVS namespace
 
@@ -31,6 +31,8 @@ Important structures:
 
 - `Bmi270RawSample`
 - `GpsSample`
+- `Ina226Sample`
+- `Ky024Sample`
 - `MeasurementSnapshot`
 
 `MeasurementSnapshot` is the data passed into FSM logic and telemetry. New measured values should be added here only when they are part of the shared avionics state.
@@ -63,4 +65,4 @@ Defines the packed telemetry packet and `TelemetryService`.
 - packet packing
 - packet-counter persistence after successful send
 
-The telemetry packet is 27 bytes and is checked at compile time with `static_assert`.
+The telemetry packet is 29 bytes and is checked at compile time with `static_assert`.

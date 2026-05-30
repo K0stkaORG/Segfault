@@ -25,10 +25,11 @@ struct RocketTelemetry {
   int16_t gpsLatOffset;
   int16_t gpsLonOffset;
   int16_t gpsAltMeters;
+  uint16_t ky024Analog;
 };
 #pragma pack(pop)
 
-static_assert(sizeof(RocketTelemetry) == 27, "RocketTelemetry must be 27 bytes");
+static_assert(sizeof(RocketTelemetry) == 29, "RocketTelemetry must be 29 bytes");
 
 class TelemetryService {
  public:
@@ -54,7 +55,7 @@ class TelemetryService {
   bool timeoutFired(uint32_t nowMs) const;
   static void printBytes(const uint8_t *bytes, size_t length);
   static uint16_t scalePressure(float pressurePa);
-  static uint8_t scaleBattery(uint16_t rawBatteryAdc);
+  static uint8_t scaleBatteryMilliVolts(uint16_t batteryMilliVolts);
   static int16_t scaleGpsOffset(double offsetDeg);
   static int16_t clampInt16(double value);
 
