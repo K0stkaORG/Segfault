@@ -1,5 +1,6 @@
 #include "GroundControl.h"
 
+#include <stdio.h>
 #include <string.h>
 #include "AvionicsConfig.h"
 
@@ -20,30 +21,47 @@ bool decodePacket(const uint8_t *bytes, size_t length, GroundControlPacket &pack
   return true;
 }
 
-void printPacket(const uint8_t *bytes, size_t length, float rssi, float snr, const __FlashStringHelper *status) {
+void printPacket(const uint8_t *bytes,
+                 size_t length,
+                 float rssi,
+                 float snr,
+                 const char *status) {
   if (!AvionicsConfig::EnableSerial) {
     return;
   }
 
-  Serial.print(F("RX control "));
-  Serial.print(status);
-  Serial.print(' ');
-  Serial.print(length);
-  Serial.print(F(" bytes RSSI "));
-  Serial.print(rssi);
-  Serial.print(F(" dBm SNR "));
-  Serial.print(snr);
-  Serial.print(F(" dB:"));
-
-  for (size_t i = 0; bytes != nullptr && i < length; ++i) {
-    Serial.print(' ');
-    if (bytes[i] < 0x10) {
-      Serial.print('0');
-    }
-    Serial.print(bytes[i], HEX);
+  char line[160] = {};
+  size_t pos = 0;
+  const int written = snprintf(line + pos, sizeof(line) - pos,
+                               "RX control %s %u bytes RSSI %.2f dBm SNR %.2f dB:",
+                               status == nullptr ? "unknown" : status,
+                               static_cast<unsigned>(length),
+                               static_cast<double>(rssi),
+                               static_cast<double>(snr));
+  if (written <= 0) {
+    return;
   }
 
-  Serial.println();
+  pos += static_cast<size_t>(written);
+  for (size_t i = 0; bytes != nullptr && i < length; ++i) {
+    if (pos + 3 >= sizeof(line)) {
+      break;
+    }
+    line[pos++] = ' ';
+    const uint8_t value = bytes[i];
+    line[pos++] = "0123456789ABCDEF"[(value >> 4) & 0x0F];
+    line[pos++] = "0123456789ABCDEF"[value & 0x0F];
+  }
+
+  if (pos + 1 >= sizeof(line)) {
+    pos = sizeof(line) - 2;
+  }
+  line[pos++] = '\n';
+
+  if (Serial.availableForWrite() < pos) {
+    return;
+  }
+  Serial.write(reinterpret_cast<const uint8_t *>(line), pos);
 }
 }  // namespace
 
@@ -54,7 +72,7 @@ void attachServo(ServoService &servo) {
 void handlePacket(const uint8_t *bytes, size_t length, float rssi, float snr) {
   GroundControlPacket packet{};
   if (!decodePacket(bytes, length, packet)) {
-    printPacket(bytes, length, rssi, snr, F("ignored"));
+    printPacket(bytes, length, rssi, snr, "ignored");
     return;
   }
 
@@ -71,7 +89,7 @@ void handlePacket(const uint8_t *bytes, size_t length, float rssi, float snr) {
       break;
   }
 
-  printPacket(bytes, length, rssi, snr, handled ? F("handled") : F("unhandled"));
+  printPacket(bytes, length, rssi, snr, handled ? "handled" : "unhandled");
 }
 
 }  // namespace GroundControl

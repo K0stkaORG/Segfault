@@ -2,6 +2,7 @@
 
 #include <RadioLib.h>
 #include <SPI.h>
+#include <stdio.h>
 #include "AvionicsConfig.h"
 #include "GroundControl.h"
 
@@ -10,6 +11,27 @@ SX1262 radio = new Module(AvionicsConfig::LoRaCsPin,
                           AvionicsConfig::LoRaDio1Pin,
                           AvionicsConfig::LoRaResetPin,
                           AvionicsConfig::LoRaBusyPin);
+
+constexpr char kHexDigits[] = "0123456789ABCDEF";
+
+void tryPrintStatus(const char *prefix, int16_t code) {
+  if (!AvionicsConfig::EnableSerial) {
+    return;
+  }
+
+  char line[96] = {};
+  const int written = snprintf(line, sizeof(line), "%s %d\n", prefix, code);
+  if (written <= 0) {
+    return;
+  }
+
+  const size_t length = static_cast<size_t>(written);
+  if (Serial.availableForWrite() < length) {
+    return;
+  }
+
+  Serial.write(reinterpret_cast<const uint8_t *>(line), length);
+}
 }  // namespace
 
 volatile bool TelemetryService::txInProgress_ = false;
@@ -35,10 +57,7 @@ bool TelemetryService::begin() {
       radio.setDio2AsRfSwitch(true);
     }
   } else {
-    if (AvionicsConfig::EnableSerial) {
-      Serial.print(F("SX1262 init failed: "));
-      Serial.println(state);
-    }
+    tryPrintStatus("SX1262 init failed:", state);
   }
 
   txInProgress_ = false;
@@ -113,10 +132,7 @@ bool TelemetryService::send(const RocketTelemetry &packet) {
   uint8_t *mutableBytes = const_cast<uint8_t *>(bytes);
   const int16_t state = radio.startTransmit(mutableBytes, sizeof(packet));
   if (state != RADIOLIB_ERR_NONE) {
-    if (AvionicsConfig::EnableSerial) {
-      Serial.print(F("SX1262 TX start failed: "));
-      Serial.println(state);
-    }
+    tryPrintStatus("SX1262 TX start failed:", state);
     return false;
   }
 
@@ -191,10 +207,7 @@ void TelemetryService::serviceRadio() {
     txDone_ = false;
     const int16_t state = radio.finishTransmit();
     if (state != RADIOLIB_ERR_NONE) {
-      if (AvionicsConfig::EnableSerial) {
-        Serial.print(F("SX1262 TX finish failed: "));
-        Serial.println(state);
-      }
+      tryPrintStatus("SX1262 TX finish failed:", state);
     }
 
     txInProgress_ = false;
@@ -214,9 +227,8 @@ void TelemetryService::serviceRadio() {
 
     if (state == RADIOLIB_ERR_NONE) {
       GroundControl::handlePacket(buffer, readLength, radio.getRSSI(), radio.getSNR());
-    } else if (AvionicsConfig::EnableSerial) {
-      Serial.print(F("SX1262 RX failed: "));
-      Serial.println(state);
+    } else {
+      tryPrintStatus("SX1262 RX failed:", state);
     }
   }
 
@@ -238,21 +250,38 @@ bool TelemetryService::timeoutFired(uint32_t nowMs) const {
 }
 
 void TelemetryService::printBytes(const uint8_t *bytes, size_t length) {
-  if (!AvionicsConfig::EnableSerial) return;
-  
-  Serial.print(F("TX "));
-  Serial.print(length);
-  Serial.print(F(" bytes:"));
-
-  for (size_t i = 0; i < length; ++i) {
-    Serial.print(' ');
-    if (bytes[i] < 0x10) {
-      Serial.print('0');
-    }
-    Serial.print(bytes[i], HEX);
+  if (!AvionicsConfig::EnableSerial) {
+    return;
   }
 
-  Serial.println();
+  char line[192] = {};
+  size_t pos = 0;
+  const int written = snprintf(line + pos, sizeof(line) - pos,
+                               "TX %u bytes:",
+                               static_cast<unsigned>(length));
+  if (written <= 0) {
+    return;
+  }
+
+  pos += static_cast<size_t>(written);
+  for (size_t i = 0; bytes != nullptr && i < length; ++i) {
+    if (pos + 3 >= sizeof(line)) {
+      break;
+    }
+    line[pos++] = ' ';
+    line[pos++] = kHexDigits[(bytes[i] >> 4) & 0x0F];
+    line[pos++] = kHexDigits[bytes[i] & 0x0F];
+  }
+
+  if (pos + 1 >= sizeof(line)) {
+    pos = sizeof(line) - 2;
+  }
+  line[pos++] = '\n';
+
+  if (Serial.availableForWrite() < pos) {
+    return;
+  }
+  Serial.write(reinterpret_cast<const uint8_t *>(line), pos);
 }
 
 uint16_t TelemetryService::scalePressure(float pressurePa) {
