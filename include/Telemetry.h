@@ -52,10 +52,8 @@ class TelemetryService {
  private:
   static void IRAM_ATTR onTxDone();
   static void IRAM_ATTR onRxDone();
-  void serviceRadio(uint32_t nowMs);
-  void startReceiveIfIdle(uint32_t nowMs);
-  bool canInterruptRxForTx(uint32_t nowMs, uint32_t telemetryOverdueMs) const;
-  void persistPacketCounterIfDue(uint32_t nowMs, PersistentStore &persistentStore);
+    void serviceRadio();
+    void startReceiveIfIdle();
   bool timeoutFired(uint32_t nowMs) const;
   static void printBytes(const uint8_t *bytes, size_t length);
   static uint16_t scalePressure(float pressurePa);
@@ -68,11 +66,6 @@ class TelemetryService {
   bool enabled_ = false;
   uint32_t intervalMs_ = 0;
   uint32_t nextTelemetryAtMs_ = 0;
-  uint32_t rxStartedAtMs_ = 0;
-  uint32_t txStartedAtMs_ = 0;
-  uint32_t telemetryDueSinceMs_ = 0;
-  uint32_t nextPacketCounterPersistAtMs_ = 0;
-  uint8_t lastPersistedPacketCounter_ = 0;
 
   static volatile bool txInProgress_;
   static volatile bool txDone_;
