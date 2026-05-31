@@ -7,8 +7,9 @@ namespace AvionicsConfig {
 constexpr uint32_t SerialBaud = 115200;
 
 constexpr uint32_t TelemetryIntervalMs = 200;
-constexpr uint32_t BeforeLaunchHeartbeatIntervalMs = 10000;
+constexpr uint32_t BeforeLaunchHeartbeatIntervalMs = 1000; // debug speed
 constexpr uint32_t MeasurementIntervalMs = 20;
+constexpr uint32_t TelemetryPacketCounterPersistIntervalMs = 5000;
 
 constexpr bool EnableSerial = true;              // DEBUG ONLY!
 constexpr bool EnableTelemetrySerialDump = true; // DEBUG ONLY!
@@ -23,6 +24,9 @@ constexpr int8_t LoRaTxPowerDbm = 10;
 constexpr uint16_t LoRaPreambleLength = 8;
 constexpr bool LoRaUseDio2RfSwitch = true;
 constexpr size_t LoRaMaxRxPacketBytes = 4;
+constexpr uint32_t LoRaMinRxListenBeforeTxMs = 100;
+constexpr uint32_t LoRaMaxRxTelemetryDelayMs = 150;
+constexpr uint32_t LoRaTxTimeoutMs = 1000;
 
 constexpr uint16_t GroundControlPacketMagic = 0x4347;
 constexpr uint8_t GroundControlCommandStowServo = 0x55;

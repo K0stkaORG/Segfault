@@ -124,7 +124,7 @@ Current behavior:
 
 ### `Telemetry`
 
-Owns LoRa setup, incoming control packet receive scheduling, telemetry packet packing, send scheduling, packet counter management, and packet-counter persistence after successful send.
+Owns LoRa setup, incoming control packet receive scheduling, telemetry packet packing, send scheduling, packet counter management, and periodic packet-counter persistence.
 
 Current packet format is the packed `RocketTelemetry` struct from `defvals.txt`. It is checked with:
 
@@ -140,7 +140,7 @@ Telemetry scheduling is controlled by:
 - `telemetry.disable()`
 - `telemetry.tick(nowMs, fsm, measurement, persistentStore)`
 
-`TelemetryService::tick()` first services the radio, including completed TX and completed RX packets. It then checks whether the telemetry timeout has fired, builds a packet from the latest FSM state and measurement snapshot, sends it over LoRa, and persists the packet counter after successful send.
+`TelemetryService::tick()` first services the radio, including completed TX and completed RX packets. It then checks whether the telemetry timeout has fired, gives RX priority when the minimum listen window has not elapsed, builds a packet from the latest FSM state and measurement snapshot, and sends it over LoRa.
 
 Transmission uses RadioLib `startTransmit()` with the SX1262 packet-sent callback. RX uses RadioLib `startReceive()` with the SX1262 packet-received callback whenever TX is not in progress. Every accepted TX packet is also printed to Serial as a hex byte dump.
 
@@ -153,6 +153,7 @@ Bounded/non-blocking parts:
 - telemetry is scheduled by timestamp
 - LoRa TX uses RadioLib async `startTransmit()`
 - LoRa RX uses RadioLib async `startReceive()` while the radio is not transmitting
+- telemetry will not interrupt RX until `LoRaMinRxListenBeforeTxMs` has elapsed
 - GPS parser consumes at most `MaxGpsBytesPerTick` bytes per measurement tick
 - missing sensors do not stop the firmware
 
@@ -162,8 +163,8 @@ Known synchronous parts:
 - BMI270 reads are synchronous I2C calls
 - ADC reads are synchronous
 - AXP2101 battery voltage reads are synchronous I2C calls
-- NVS writes happen when FSM state changes and after successful telemetry sends
-- Serial byte dumps can slow down telemetry during testing
+- NVS writes happen when FSM state changes and periodically for the packet counter
+- Serial byte dumps are skipped if the UART buffer does not have room
 
 ## Persistence and Restart Behavior
 

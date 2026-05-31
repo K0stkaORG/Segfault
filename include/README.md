@@ -12,6 +12,7 @@ Central configuration for constants used across the firmware:
 - measurement and telemetry intervals
 - LoRa frequency, sync word, and pins
 - LoRa receive buffer size
+- LoRa RX minimum listen time before TX can interrupt it
 - I2C pins, clock, and sensor addresses
 - GPS UART pins and parser budget
 - KY-024 input pins
@@ -77,6 +78,6 @@ Defines the packed telemetry packet and `TelemetryService`.
 - telemetry interval
 - send timeout
 - packet packing
-- packet-counter persistence after successful send
+- periodic packet-counter persistence
 
 The telemetry packet is 29 bytes and is checked at compile time with `static_assert`.

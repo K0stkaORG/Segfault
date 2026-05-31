@@ -67,12 +67,18 @@ bool TelemetryService::begin() {
   enabled_ = false;
   intervalMs_ = 0;
   nextTelemetryAtMs_ = 0;
-  startReceiveIfIdle();
+  rxStartedAtMs_ = 0;
+  txStartedAtMs_ = 0;
+  telemetryDueSinceMs_ = 0;
+  nextPacketCounterPersistAtMs_ = AvionicsConfig::TelemetryPacketCounterPersistIntervalMs;
+  lastPersistedPacketCounter_ = packetCounter_;
+  startReceiveIfIdle(millis());
   return ready_;
 }
 
 void TelemetryService::setPacketCounter(uint8_t packetCounter) {
   packetCounter_ = packetCounter;
+  lastPersistedPacketCounter_ = packetCounter;
 }
 
 uint8_t TelemetryService::packetCounter() const {
@@ -97,9 +103,20 @@ void TelemetryService::tick(uint32_t nowMs,
                             const FlightFsm &fsm,
                             const MeasurementSnapshot &measurement,
                             PersistentStore &persistentStore) {
-  serviceRadio();
+  serviceRadio(nowMs);
+  persistPacketCounterIfDue(nowMs, persistentStore);
 
   if (!timeoutFired(nowMs)) {
+    telemetryDueSinceMs_ = 0;
+    return;
+  }
+
+  if (telemetryDueSinceMs_ == 0) {
+    telemetryDueSinceMs_ = nowMs;
+  }
+
+  const uint32_t telemetryOverdueMs = static_cast<uint32_t>(nowMs - telemetryDueSinceMs_);
+  if (!canInterruptRxForTx(nowMs, telemetryOverdueMs)) {
     return;
   }
 
@@ -108,14 +125,14 @@ void TelemetryService::tick(uint32_t nowMs,
 
   const bool sent = send(packet);
   if (sent) {
-    persistentStore.savePacketCounter(packetCounter_);
+    nextTelemetryAtMs_ = nowMs + intervalMs_;
+    telemetryDueSinceMs_ = 0;
   }
-
-  nextTelemetryAtMs_ = nowMs + intervalMs_;
 }
 
 bool TelemetryService::send(const RocketTelemetry &packet) {
-  serviceRadio();
+  const uint32_t nowMs = millis();
+  serviceRadio(nowMs);
 
   if (!ready_ || txInProgress_) {
     return false;
@@ -138,6 +155,8 @@ bool TelemetryService::send(const RocketTelemetry &packet) {
 
   txDone_ = false;
   txInProgress_ = true;
+  txStartedAtMs_ = nowMs;
+  rxStartedAtMs_ = 0;
   if (AvionicsConfig::EnableTelemetrySerialDump) {
     printBytes(bytes, sizeof(packet));
   }
@@ -194,13 +213,21 @@ void IRAM_ATTR TelemetryService::onRxDone() {
   rxDone_ = true;
 }
 
-void TelemetryService::serviceRadio() {
+void TelemetryService::serviceRadio(uint32_t nowMs) {
   if (!ready_) {
     return;
   }
 
   if (txInProgress_) {
     if (!txDone_) {
+      if (static_cast<uint32_t>(nowMs - txStartedAtMs_) >= AvionicsConfig::LoRaTxTimeoutMs) {
+        radio.standby();
+        txInProgress_ = false;
+        txDone_ = false;
+        txStartedAtMs_ = 0;
+        rxListening_ = false;
+        startReceiveIfIdle(nowMs);
+      }
       return;
     }
 
@@ -211,8 +238,9 @@ void TelemetryService::serviceRadio() {
     }
 
     txInProgress_ = false;
+    txStartedAtMs_ = 0;
     rxListening_ = false;
-    startReceiveIfIdle();
+    startReceiveIfIdle(nowMs);
     return;
   }
 
@@ -225,17 +253,17 @@ void TelemetryService::serviceRadio() {
     const size_t readLength = packetLength <= sizeof(buffer) ? packetLength : sizeof(buffer);
     const int16_t state = radio.readData(buffer, readLength);
 
-    if (state == RADIOLIB_ERR_NONE) {
+    if (state == RADIOLIB_ERR_NONE && packetLength == readLength) {
       GroundControl::handlePacket(buffer, readLength, radio.getRSSI(), radio.getSNR());
     } else {
       tryPrintStatus("SX1262 RX failed:", state);
     }
   }
 
-  startReceiveIfIdle();
+  startReceiveIfIdle(nowMs);
 }
 
-void TelemetryService::startReceiveIfIdle() {
+void TelemetryService::startReceiveIfIdle(uint32_t nowMs) {
   if (!ready_ || txInProgress_ || rxListening_) {
     return;
   }
@@ -243,6 +271,39 @@ void TelemetryService::startReceiveIfIdle() {
   radio.setPacketReceivedAction(TelemetryService::onRxDone);
   const int16_t state = radio.startReceive();
   rxListening_ = state == RADIOLIB_ERR_NONE;
+  if (rxListening_) {
+    rxStartedAtMs_ = nowMs;
+  }
+}
+
+bool TelemetryService::canInterruptRxForTx(uint32_t nowMs,
+                                           uint32_t telemetryOverdueMs) const {
+  if (telemetryOverdueMs >= AvionicsConfig::LoRaMaxRxTelemetryDelayMs) {
+    return true;
+  }
+
+  if (!rxListening_) {
+    return true;
+  }
+
+  return static_cast<uint32_t>(nowMs - rxStartedAtMs_) >=
+         AvionicsConfig::LoRaMinRxListenBeforeTxMs;
+}
+
+void TelemetryService::persistPacketCounterIfDue(uint32_t nowMs,
+                                                 PersistentStore &persistentStore) {
+  if (packetCounter_ == lastPersistedPacketCounter_) {
+    return;
+  }
+
+  if (static_cast<int32_t>(nowMs - nextPacketCounterPersistAtMs_) < 0) {
+    return;
+  }
+
+  persistentStore.savePacketCounter(packetCounter_);
+  lastPersistedPacketCounter_ = packetCounter_;
+  nextPacketCounterPersistAtMs_ =
+      nowMs + AvionicsConfig::TelemetryPacketCounterPersistIntervalMs;
 }
 
 bool TelemetryService::timeoutFired(uint32_t nowMs) const {
