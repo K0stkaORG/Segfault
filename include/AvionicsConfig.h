@@ -48,6 +48,15 @@ constexpr uint8_t LoRaBusyPin = 32;
 constexpr int Ky024AnalogPin = 4;
 constexpr int Ky024DigitalPin = 14;
 
+constexpr int ParachuteServoPin = 13;
+constexpr int ParachuteServoMinPulseUs = 500;
+constexpr int ParachuteServoMaxPulseUs = 2400;
+constexpr int ParachuteServoMinAngle = 0;
+constexpr int ParachuteServoMaxAngle = 180;
+constexpr int ParachuteServoStowedAngle = 0;
+constexpr int ParachuteServoDeployedAngle = 90;
+constexpr int ParachuteServoFrequencyHz = 50;
+
 constexpr double BaseLatitudeDeg = 49.7983333333;
 constexpr double BaseLongitudeDeg = 16.6866666667;
 constexpr const char *BaseGridSquare = "JN89IT";

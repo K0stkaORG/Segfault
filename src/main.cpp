@@ -6,6 +6,7 @@
 #include "PersistentStore.h"
 #include "StateLogic.h"
 #include "Telemetry.h"
+#include "ParachuteServo.h"
 
 namespace {
 PersistentStore persistentStore;
@@ -13,6 +14,7 @@ MeasurementService measurements;
 TelemetryService telemetry;
 StateLogic stateLogic;
 FlightFsm flightFsm;
+ParachuteServo parachuteServo;
 }  // namespace
 
 void setup() {
@@ -27,6 +29,7 @@ void setup() {
 
   const bool measurementsOk = measurements.begin();
   const bool telemetryOk = telemetry.begin();
+  parachuteServo.begin(AvionicsConfig::ParachuteServoPin);
 
   persistentStore.saveInitStatus(measurements.latest().bmp280Ok,
                                  measurements.latest().bmi270Ok,
@@ -51,6 +54,8 @@ void setup() {
     Serial.println(measurements.latest().pmuOk ? F("ok") : F("missing"));
     Serial.print(F("Measurements: "));
     Serial.println(measurementsOk ? F("ok") : F("degraded"));
+    Serial.print(F("Servo: "));
+    Serial.println(parachuteServo.attached() ? F("attached") : F("failed"));
     Serial.print(F("LoRa: "));
     Serial.println(telemetryOk ? F("ok") : F("failed"));
   }
