@@ -5,7 +5,6 @@
 class ParachuteServo {
 public:
   bool begin(int controlPin);
-  bool begin(int controlPin, int initialAngle);
   
   bool attached() const;
   int controlPin() const;

@@ -6,7 +6,7 @@ namespace AvionicsConfig {
 
 constexpr uint32_t SerialBaud = 115200;
 
-constexpr uint32_t TelemetryIntervalMs = 200;
+constexpr uint32_t TelemetryIntervalMs = 500;
 constexpr uint32_t BeforeLaunchHeartbeatIntervalMs = 10000;
 constexpr uint32_t MeasurementIntervalMs = 20;
 
@@ -45,7 +45,7 @@ constexpr uint8_t LoRaResetPin = 23;
 constexpr uint8_t LoRaDio1Pin = 33;
 constexpr uint8_t LoRaBusyPin = 32;
 
-constexpr int Ky024AnalogPin = 4;
+constexpr int Ky024AnalogPin = 36;
 constexpr int Ky024DigitalPin = 14;
 
 constexpr int ParachuteServoPin = 13;

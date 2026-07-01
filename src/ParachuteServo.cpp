@@ -3,23 +3,14 @@
 #include "AvionicsConfig.h"
 
 bool ParachuteServo::begin(int controlPin) {
-  return begin(controlPin, AvionicsConfig::ParachuteServoStowedAngle);
-}
-
-bool ParachuteServo::begin(int controlPin, int initialAngle) {
   controlPin_ = controlPin;
-  angle_ = clampAngle(initialAngle);
 
   servo_.setPeriodHertz(AvionicsConfig::ParachuteServoFrequencyHz);
   servo_.attach(controlPin_,
                 AvionicsConfig::ParachuteServoMinPulseUs,
                 AvionicsConfig::ParachuteServoMaxPulseUs);
   attached_ = servo_.attached();
-  if (!attached_) {
-    return false;
-  }
-
-  servo_.write(angle_);
+  
   return attached_;
 }
 
