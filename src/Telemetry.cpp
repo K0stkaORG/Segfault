@@ -3,16 +3,13 @@
 #include <RadioLib.h>
 #include <SPI.h>
 #include "AvionicsConfig.h"
-
-namespace {
-SX1262 radio = new Module(AvionicsConfig::LoRaCsPin,
-                          AvionicsConfig::LoRaDio1Pin,
-                          AvionicsConfig::LoRaResetPin,
-                          AvionicsConfig::LoRaBusyPin);
-}  // namespace
+#include "LoRaRadio.h"
 
 volatile bool TelemetryService::txInProgress_ = false;
-volatile bool TelemetryService::txDone_ = false;
+
+bool TelemetryService::isTxInProgress() {
+  return txInProgress_;
+}
 
 bool TelemetryService::begin() {
   SPI.begin(AvionicsConfig::LoRaSckPin,
@@ -29,7 +26,7 @@ bool TelemetryService::begin() {
                                     AvionicsConfig::LoRaPreambleLength);
   ready_ = state == RADIOLIB_ERR_NONE;
   if (ready_) {
-    radio.setPacketSentAction(TelemetryService::onTxDone);
+    radio.setDio1Action(onLoRaInterrupt);
     if (AvionicsConfig::LoRaUseDio2RfSwitch) {
       radio.setDio2AsRfSwitch(true);
     }
@@ -41,7 +38,6 @@ bool TelemetryService::begin() {
   }
 
   txInProgress_ = false;
-  txDone_ = false;
   enabled_ = false;
   intervalMs_ = 0;
   nextTelemetryAtMs_ = 0;
@@ -102,6 +98,7 @@ bool TelemetryService::send(const RocketTelemetry &packet) {
 
   const uint8_t *bytes = reinterpret_cast<const uint8_t *>(&packet);
   uint8_t *mutableBytes = const_cast<uint8_t *>(bytes);
+  radio.standby();
   const int16_t state = radio.startTransmit(mutableBytes, sizeof(packet));
   if (state != RADIOLIB_ERR_NONE) {
     if (AvionicsConfig::EnableSerial) {
@@ -111,7 +108,6 @@ bool TelemetryService::send(const RocketTelemetry &packet) {
     return false;
   }
 
-  txDone_ = false;
   txInProgress_ = true;
   if (AvionicsConfig::EnableTelemetrySerialDump) {
     printBytes(bytes, sizeof(packet));
@@ -161,16 +157,17 @@ RocketTelemetry TelemetryService::buildPacket(
   return packet;
 }
 
-void IRAM_ATTR TelemetryService::onTxDone() {
-  txDone_ = true;
-}
 
 void TelemetryService::serviceRadio() {
-  if (!txInProgress_ || !txDone_) {
+  if (!txInProgress_) {
     return;
   }
 
-  txDone_ = false;
+  if (!loRaInterruptFired) {
+    return;
+  }
+
+  loRaInterruptFired = false;
   const int16_t state = radio.finishTransmit();
   if (state != RADIOLIB_ERR_NONE) {
     if (AvionicsConfig::EnableSerial) {

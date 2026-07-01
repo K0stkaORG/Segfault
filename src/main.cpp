@@ -7,6 +7,7 @@
 #include "StateLogic.h"
 #include "Telemetry.h"
 #include "ParachuteServo.h"
+#include "RemoteControl.h"
 
 namespace {
 PersistentStore persistentStore;
@@ -15,6 +16,7 @@ TelemetryService telemetry;
 StateLogic stateLogic;
 FlightFsm flightFsm;
 ParachuteServo parachuteServo;
+RemoteControlService remoteControl;
 }  // namespace
 
 void setup() {
@@ -66,4 +68,5 @@ void loop() {
   measurements.tick(nowMs);
   stateLogic.tick(nowMs, flightFsm, measurements.latest(), telemetry);
   telemetry.tick(nowMs, flightFsm, measurements.latest(), persistentStore);
+  remoteControl.tick(parachuteServo);
 }

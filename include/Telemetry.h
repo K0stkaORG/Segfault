@@ -44,13 +44,13 @@ class TelemetryService {
             PersistentStore &persistentStore);
   bool send(const RocketTelemetry &packet);
   bool isReady() const;
+  static bool isTxInProgress();
 
   static RocketTelemetry buildPacket(uint32_t nowMs,
                                      const FlightFsm &fsm,
                                      const MeasurementSnapshot &measurement);
 
  private:
-  static void IRAM_ATTR onTxDone();
   static void serviceRadio();
   bool timeoutFired(uint32_t nowMs) const;
   static void printBytes(const uint8_t *bytes, size_t length);
@@ -66,5 +66,4 @@ class TelemetryService {
   uint32_t nextTelemetryAtMs_ = 0;
 
   static volatile bool txInProgress_;
-  static volatile bool txDone_;
 };
