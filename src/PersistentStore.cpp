@@ -90,3 +90,22 @@ void PersistentStore::saveInitStatus(bool bmp280Ok,
 
   preferences_.putUChar(KeyInitStatus, status);
 }
+
+bool PersistentStore::loadBaseline(SensorBaseline &baseline) {
+  if (!ready_) {
+    return false;
+  }
+
+  baseline.groundAltitude_m = preferences_.getFloat("base_alt", 0.0f);
+  baseline.accelZOffset_g = preferences_.getFloat("base_accz", 0.0f);
+  return preferences_.isKey("base_alt");
+}
+
+void PersistentStore::saveBaseline(const SensorBaseline &baseline) {
+  if (!ready_) {
+    return;
+  }
+
+  preferences_.putFloat("base_alt", baseline.groundAltitude_m);
+  preferences_.putFloat("base_accz", baseline.accelZOffset_g);
+}

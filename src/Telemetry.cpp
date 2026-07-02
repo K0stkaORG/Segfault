@@ -137,7 +137,7 @@ RocketTelemetry TelemetryService::buildPacket(
   packet.gyroY = static_cast<int16_t>(measurement.imu.gyroY_dps * AvionicsConfig::Bmi270GyroDpsToLsbTelemetry);
   packet.gyroZ = static_cast<int16_t>(measurement.imu.gyroZ_dps * AvionicsConfig::Bmi270GyroDpsToLsbTelemetry);
 
-  packet.pressureScaled = scalePressure(measurement.pressurePa);
+  packet.kfAltitudeAgl = static_cast<int16_t>(measurement.aglAltitude_m);
   packet.triboVoltage = static_cast<uint16_t>(measurement.ina226.busVoltageV * 1000.0f); // Convert V to mV
   packet.batteryVoltage = scaleBatteryMilliVolts(measurement.batteryMilliVolts);
 
@@ -148,9 +148,7 @@ RocketTelemetry TelemetryService::buildPacket(
         measurement.gps.longitudeDeg - AvionicsConfig::BaseLongitudeDeg);
   }
 
-  if (measurement.gps.altitudeValid) {
-    packet.gpsAltMeters = clampInt16(measurement.gps.altitudeMeters);
-  }
+  packet.kfVerticalVelocity = static_cast<int16_t>(measurement.verticalVelocity_mps);
 
   packet.ky024Analog = measurement.ky024.analog;
 

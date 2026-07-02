@@ -5,6 +5,7 @@
 #include <Adafruit_BMP280.h>
 #include <TinyGPS++.h>
 #include <INA226_WE.h>
+#include "PersistentStore.h"
 
 #ifndef XPOWERS_CHIP_AXP2101
 #define XPOWERS_CHIP_AXP2101
@@ -14,6 +15,15 @@
 extern "C" {
 #include <bmi270_api/bmi270.h>
 }
+
+struct KalmanState {
+  float altitude_m = 0.0f;
+  float velocity_mps = 0.0f;
+  float p00 = 1.0f;
+  float p01 = 0.0f;
+  float p10 = 0.0f;
+  float p11 = 1.0f;
+};
 
 struct Bmi270RawSample {
   int16_t accelX = 0;
@@ -71,6 +81,8 @@ struct MeasurementSnapshot {
   bool pmuReadOk = false;
   float temperatureC = 0.0f;
   float pressurePa = 0.0f;
+  float aglAltitude_m = 0.0f;
+  float verticalVelocity_mps = 0.0f;
   Bmi270RawSample imuRaw;
   ImuCalibratedSample imu;
   GpsSample gps;
@@ -86,6 +98,10 @@ class MeasurementService {
   bool begin();
   void tick(uint32_t nowMs);
   const MeasurementSnapshot &latest() const;
+  
+  void setBaseliningEnabled(bool enabled);
+  void setBaseline(const SensorBaseline& baseline);
+  SensorBaseline getBaseline() const;
 
  private:
   struct Bmi270I2cContext {
@@ -123,4 +139,9 @@ class MeasurementService {
   Bmi270I2cContext bmi270Context_{};
   MeasurementSnapshot snapshot_{};
   uint32_t nextSampleAtMs_ = 0;
+  
+  bool isBaseliningEnabled_ = true;
+  SensorBaseline baseline_{};
+  KalmanState kfState_{};
+  uint32_t lastKfUpdateMs_ = 0;
 };

@@ -7,7 +7,7 @@ namespace AvionicsConfig {
 constexpr uint32_t SerialBaud = 115200;
 
 constexpr uint32_t TelemetryIntervalMs = 500;
-constexpr uint32_t BeforeLaunchHeartbeatIntervalMs = 10000;     // CHECK DEBUG INTERVAL!
+constexpr uint32_t BeforeLaunchHeartbeatIntervalMs = 500;     // CHECK DEBUG INTERVAL!
 constexpr uint32_t MeasurementIntervalMs = 20;
 
 constexpr bool EnableSerial = true;              // DEBUG ONLY!
@@ -61,8 +61,10 @@ constexpr int ParachuteServoStowedAngle = 0;
 constexpr int ParachuteServoDeployedAngle = 90;
 constexpr int ParachuteServoFrequencyHz = 50;
 
-constexpr double BaseLatitudeDeg = 49.7983333333;
-constexpr double BaseLongitudeDeg = 16.6866666667;
+//constexpr double BaseLatitudeDeg = 49.7983333333;
+//constexpr double BaseLongitudeDeg = 16.6866666667;
+constexpr double BaseLatitudeDeg = 49.16100; // DEBUG ONLY!
+constexpr double BaseLongitudeDeg = 16.56133; // DEBUG ONLY!
 constexpr const char *BaseGridSquare = "JN89IT";
 
 constexpr const char *NvsNamespace = "rocket";

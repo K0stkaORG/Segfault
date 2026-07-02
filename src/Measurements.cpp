@@ -42,11 +42,85 @@ void MeasurementService::tick(uint32_t nowMs) {
   snapshot_.ina226ReadOk = snapshot_.ina226Ok && readIna226();
   snapshot_.pmuReadOk = snapshot_.pmuOk && readPmu();
 
+  float dt = 0.0f;
+  if (lastKfUpdateMs_ != 0) {
+    dt = (nowMs - lastKfUpdateMs_) / 1000.0f;
+  }
+  lastKfUpdateMs_ = nowMs;
+
+  if (dt > 0.0f && snapshot_.bmp280ReadOk) {
+    float p0 = 101325.0f;
+    float currentAltASL = 44330.0f * (1.0f - pow(snapshot_.pressurePa / p0, 0.190295f));
+
+    if (isBaseliningEnabled_) {
+      if (baseline_.groundAltitude_m == 0.0f) {
+        baseline_.groundAltitude_m = currentAltASL;
+        kfState_.altitude_m = currentAltASL;
+      } else {
+        baseline_.groundAltitude_m = (0.95f * baseline_.groundAltitude_m) + (0.05f * currentAltASL);
+      }
+      if (snapshot_.bmi270ReadOk) {
+        if (baseline_.accelZOffset_g == 0.0f) {
+           baseline_.accelZOffset_g = snapshot_.imu.accelZ_g;
+        } else {
+           baseline_.accelZOffset_g = (0.95f * baseline_.accelZOffset_g) + (0.05f * snapshot_.imu.accelZ_g);
+        }
+      }
+    }
+
+    float accelZ = 0.0f;
+    if (snapshot_.bmi270ReadOk) {
+      accelZ = (snapshot_.imu.accelZ_g - baseline_.accelZOffset_g) * 9.80665f; 
+    }
+
+    float predAlt = kfState_.altitude_m + kfState_.velocity_mps * dt + 0.5f * accelZ * dt * dt;
+    float predVel = kfState_.velocity_mps + accelZ * dt;
+
+    float qAlt = 0.01f;
+    float qVel = 0.1f;
+
+    float p00_pred = kfState_.p00 + dt * (kfState_.p10 + kfState_.p01) + dt * dt * kfState_.p11 + qAlt;
+    float p01_pred = kfState_.p01 + dt * kfState_.p11;
+    float p10_pred = kfState_.p10 + dt * kfState_.p11;
+    float p11_pred = kfState_.p11 + qVel;
+
+    float rAlt = 2.0f; 
+
+    float y = currentAltASL - predAlt; 
+    float s = p00_pred + rAlt;         
+
+    float k0 = p00_pred / s;
+    float k1 = p10_pred / s;
+
+    kfState_.altitude_m = predAlt + k0 * y;
+    kfState_.velocity_mps = predVel + k1 * y;
+
+    kfState_.p00 = (1.0f - k0) * p00_pred;
+    kfState_.p01 = (1.0f - k0) * p01_pred;
+    kfState_.p10 = -k1 * p00_pred + p10_pred;
+    kfState_.p11 = -k1 * p01_pred + p11_pred;
+  }
+  
+  snapshot_.aglAltitude_m = kfState_.altitude_m - baseline_.groundAltitude_m;
+  snapshot_.verticalVelocity_mps = kfState_.velocity_mps;
+
   nextSampleAtMs_ = nowMs + AvionicsConfig::MeasurementIntervalMs;
 }
 
 const MeasurementSnapshot &MeasurementService::latest() const {
   return snapshot_;
+}
+
+void MeasurementService::setBaseliningEnabled(bool enabled) {
+  isBaseliningEnabled_ = enabled;
+}
+
+void MeasurementService::setBaseline(const SensorBaseline& baseline) {
+  baseline_ = baseline;
+}
+
+SensorBaseline MeasurementService::getBaseline() const {
+  return baseline_;
 }
 
 bool MeasurementService::beginBmp280() {

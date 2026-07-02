@@ -18,13 +18,13 @@ struct RocketTelemetry {
   int16_t gyroY;
   int16_t gyroZ;
 
-  uint16_t pressureScaled;
+  int16_t kfAltitudeAgl;
   uint16_t triboVoltage;
   uint8_t batteryVoltage;
 
   int16_t gpsLatOffset;
   int16_t gpsLonOffset;
-  int16_t gpsAltMeters;
+  int16_t kfVerticalVelocity;
   uint16_t ky024Analog;
 };
 #pragma pack(pop)

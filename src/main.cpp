@@ -28,6 +28,8 @@ void setup() {
   flightFsm.attachPersistentStore(persistentStore);
   flightFsm.setState(persistentStore.loadFlightState());
   telemetry.setPacketCounter(persistentStore.loadPacketCounter());
+  
+  stateLogic.begin(persistentStore, flightFsm, measurements);
 
   const bool measurementsOk = measurements.begin();
   const bool telemetryOk = telemetry.begin();
