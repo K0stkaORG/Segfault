@@ -68,7 +68,7 @@ void setup() {
 void loop() {
   const uint32_t nowMs = millis();
   measurements.tick(nowMs);
-  stateLogic.tick(nowMs, flightFsm, measurements.latest(), telemetry);
+  stateLogic.tick(nowMs, flightFsm, measurements.latest(), telemetry, parachuteServo);
   telemetry.tick(nowMs, flightFsm, measurements.latest(), persistentStore);
-  remoteControl.tick(parachuteServo);
+  remoteControl.tick(parachuteServo, flightFsm);
 }

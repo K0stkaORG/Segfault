@@ -6,7 +6,7 @@ class PersistentStore;
 
 enum class FlightState : uint8_t {
   BeforeLaunch = 0,
-  RBFRemoved,
+  Armed,
   Flight,
   ApogeeReached,
   ChuteDeployed,

@@ -98,6 +98,8 @@ bool PersistentStore::loadBaseline(SensorBaseline &baseline) {
 
   baseline.groundAltitude_m = preferences_.getFloat("base_alt", 0.0f);
   baseline.accelZOffset_g = preferences_.getFloat("base_accz", 0.0f);
+  baseline.flightStartTimeMs = preferences_.getUInt("fl_start_ms", 0);
+  baseline.flightStartUsesGps = preferences_.getBool("fl_start_gps", false);
   return preferences_.isKey("base_alt");
 }
 
@@ -108,4 +110,6 @@ void PersistentStore::saveBaseline(const SensorBaseline &baseline) {
 
   preferences_.putFloat("base_alt", baseline.groundAltitude_m);
   preferences_.putFloat("base_accz", baseline.accelZOffset_g);
+  preferences_.putUInt("fl_start_ms", baseline.flightStartTimeMs);
+  preferences_.putBool("fl_start_gps", baseline.flightStartUsesGps);
 }

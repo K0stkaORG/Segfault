@@ -246,6 +246,7 @@ bool MeasurementService::readGps(uint32_t nowMs) {
 
   snapshot_.gps.locationValid = gpsParser_.location.isValid();
   snapshot_.gps.altitudeValid = gpsParser_.altitude.isValid();
+  snapshot_.gps.timeValid = gpsParser_.time.isValid();
   snapshot_.gps.satellites = gpsParser_.satellites.isValid()
                                  ? gpsParser_.satellites.value()
                                  : 0;
@@ -258,6 +259,13 @@ bool MeasurementService::readGps(uint32_t nowMs) {
   snapshot_.gps.fixValid = snapshot_.gps.locationValid &&
                            snapshot_.gps.altitudeValid &&
                            snapshot_.gps.satellites > 0;
+
+  if (snapshot_.gps.timeValid) {
+    snapshot_.gps.timeOfDayMs = (gpsParser_.time.hour() * 3600000) +
+                                (gpsParser_.time.minute() * 60000) +
+                                (gpsParser_.time.second() * 1000) +
+                                (gpsParser_.time.centisecond() * 10);
+  }
 
   if (gpsParser_.location.isUpdated()) {
     snapshot_.gps.latitudeDeg = gpsParser_.location.lat();

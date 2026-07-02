@@ -53,8 +53,8 @@ const char *flightStateName(FlightState state) {
   switch (state) {
     case FlightState::BeforeLaunch:
       return "BeforeLaunch";
-    case FlightState::RBFRemoved:
-      return "RBFRemoved";
+    case FlightState::Armed:
+      return "Armed";
     case FlightState::Flight:
       return "Flight";
     case FlightState::ApogeeReached:

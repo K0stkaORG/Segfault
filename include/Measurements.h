@@ -58,10 +58,12 @@ struct Ina226Sample {
 struct GpsSample {
   bool locationValid = false;
   bool altitudeValid = false;
+  bool timeValid = false;
   bool fixValid = false;
   double latitudeDeg = 0.0;
   double longitudeDeg = 0.0;
   double altitudeMeters = 0.0;
+  uint32_t timeOfDayMs = 0;
   uint32_t locationAgeMs = 0;
   uint8_t satellites = 0;
   float hdop = 0.0f;

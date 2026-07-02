@@ -7,6 +7,8 @@
 struct SensorBaseline {
   float groundAltitude_m = 0.0f;
   float accelZOffset_g = 0.0f;
+  uint32_t flightStartTimeMs = 0;
+  bool flightStartUsesGps = false;
 };
 
 class PersistentStore {

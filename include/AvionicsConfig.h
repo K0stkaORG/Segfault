@@ -7,7 +7,7 @@ namespace AvionicsConfig {
 constexpr uint32_t SerialBaud = 115200;
 
 constexpr uint32_t TelemetryIntervalMs = 500;
-constexpr uint32_t BeforeLaunchHeartbeatIntervalMs = 500;     // CHECK DEBUG INTERVAL!
+constexpr uint32_t BeforeLaunchHeartbeatIntervalMs = 10000;     // CHECK DEBUG INTERVAL!
 constexpr uint32_t MeasurementIntervalMs = 20;
 
 constexpr bool EnableSerial = true;              // DEBUG ONLY!
@@ -60,6 +60,13 @@ constexpr int ParachuteServoMaxAngle = 180;
 constexpr int ParachuteServoStowedAngle = 0;
 constexpr int ParachuteServoDeployedAngle = 90;
 constexpr int ParachuteServoFrequencyHz = 50;
+
+constexpr float LaunchAccelThresholdMps2 = 25.0f;
+constexpr uint32_t LaunchAccelDurationMs = 100;
+constexpr float ApogeeAltitudeDropM = 5.0f;
+constexpr float ApogeeVelocityThresholdUpMps = 5.0f;
+constexpr float ApogeeVelocityThresholdDownMps = -15.0f;
+constexpr uint32_t ApogeeFailsafeTimerMs = 11400;
 
 //constexpr double BaseLatitudeDeg = 49.7983333333;
 //constexpr double BaseLongitudeDeg = 16.6866666667;
