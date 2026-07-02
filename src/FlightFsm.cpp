@@ -21,24 +21,7 @@ void FlightFsm::setState(FlightState state) {
 }
 
 uint8_t FlightFsm::stateFlags() const {
-  uint8_t flags = 0;
-
-  if (state_ == FlightState::Flight ||
-      state_ == FlightState::ApogeeReached ||
-      state_ == FlightState::ChuteDeployed) {
-    flags |= 1U << 0;
-  }
-
-  if (state_ == FlightState::ApogeeReached ||
-      state_ == FlightState::ChuteDeployed) {
-    flags |= 1U << 1;
-  }
-
-  if (state_ == FlightState::ChuteDeployed) {
-    flags |= 1U << 2;
-  }
-
-  return flags;
+  return static_cast<uint8_t>(state_);
 }
 
 const char *FlightFsm::stateName() const {
