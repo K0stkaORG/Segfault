@@ -24,6 +24,15 @@ struct Bmi270RawSample {
   int16_t gyroZ = 0;
 };
 
+struct ImuCalibratedSample {
+  float accelX_g = 0.0f;
+  float accelY_g = 0.0f;
+  float accelZ_g = 0.0f;
+  float gyroX_dps = 0.0f;
+  float gyroY_dps = 0.0f;
+  float gyroZ_dps = 0.0f;
+};
+
 struct Ky024Sample {
   uint16_t analog = 0;
   bool digital = false;
@@ -62,7 +71,8 @@ struct MeasurementSnapshot {
   bool pmuReadOk = false;
   float temperatureC = 0.0f;
   float pressurePa = 0.0f;
-  Bmi270RawSample imu;
+  Bmi270RawSample imuRaw;
+  ImuCalibratedSample imu;
   GpsSample gps;
   Ky024Sample ky024;
   Ina226Sample ina226;

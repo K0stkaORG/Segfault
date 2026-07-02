@@ -126,12 +126,36 @@ bool MeasurementService::readBmi270() {
     return false;
   }
 
-  snapshot_.imu.accelX = rawData.acc.x;
-  snapshot_.imu.accelY = rawData.acc.y;
-  snapshot_.imu.accelZ = rawData.acc.z;
-  snapshot_.imu.gyroX = rawData.gyr.x;
-  snapshot_.imu.gyroY = rawData.gyr.y;
-  snapshot_.imu.gyroZ = rawData.gyr.z;
+  snapshot_.imuRaw.accelX = rawData.acc.x;
+  snapshot_.imuRaw.accelY = rawData.acc.y;
+  snapshot_.imuRaw.accelZ = rawData.acc.z;
+  snapshot_.imuRaw.gyroX = rawData.gyr.x;
+  snapshot_.imuRaw.gyroY = rawData.gyr.y;
+  snapshot_.imuRaw.gyroZ = rawData.gyr.z;
+
+  float rawAx = rawData.acc.x;
+  float rawAy = rawData.acc.y;
+  float rawAz = rawData.acc.z;
+
+  float corrAx = (-0.10503395f * rawAx) + (0.01122737f * rawAy) - (0.99440526f * rawAz);
+  float corrAy = ( 0.01122737f * rawAx) + (0.99988593f * rawAy) + (0.01010336f * rawAz);
+  float corrAz = ( 0.99440526f * rawAx) - (0.01010336f * rawAy) - (0.10514803f * rawAz);
+
+  snapshot_.imu.accelX_g = corrAx * AvionicsConfig::Bmi270AccelLsbToG;
+  snapshot_.imu.accelY_g = corrAy * AvionicsConfig::Bmi270AccelLsbToG;
+  snapshot_.imu.accelZ_g = corrAz * AvionicsConfig::Bmi270AccelLsbToG;
+
+  float rawGx = rawData.gyr.x;
+  float rawGy = rawData.gyr.y;
+  float rawGz = rawData.gyr.z;
+
+  float corrGx = (-0.10503395f * rawGx) + (0.01122737f * rawGy) - (0.99440526f * rawGz);
+  float corrGy = ( 0.01122737f * rawGx) + (0.99988593f * rawGy) + (0.01010336f * rawGz);
+  float corrGz = ( 0.99440526f * rawGx) - (0.01010336f * rawGy) - (0.10514803f * rawGz);
+
+  snapshot_.imu.gyroX_dps = corrGx * AvionicsConfig::Bmi270GyroLsbToDps;
+  snapshot_.imu.gyroY_dps = corrGy * AvionicsConfig::Bmi270GyroLsbToDps;
+  snapshot_.imu.gyroZ_dps = corrGz * AvionicsConfig::Bmi270GyroLsbToDps;
   return true;
 }
 

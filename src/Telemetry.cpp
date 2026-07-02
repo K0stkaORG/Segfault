@@ -130,12 +130,12 @@ RocketTelemetry TelemetryService::buildPacket(
   packet.packetId = 0;
   packet.stateFlags = fsm.stateFlags();
 
-  packet.accelX = measurement.imu.accelX;
-  packet.accelY = measurement.imu.accelY;
-  packet.accelZ = measurement.imu.accelZ;
-  packet.gyroX = measurement.imu.gyroX;
-  packet.gyroY = measurement.imu.gyroY;
-  packet.gyroZ = measurement.imu.gyroZ;
+  packet.accelX = static_cast<int16_t>(measurement.imu.accelX_g * AvionicsConfig::Bmi270AccelGToLsbTelemetry);
+  packet.accelY = static_cast<int16_t>(measurement.imu.accelY_g * AvionicsConfig::Bmi270AccelGToLsbTelemetry);
+  packet.accelZ = static_cast<int16_t>(measurement.imu.accelZ_g * AvionicsConfig::Bmi270AccelGToLsbTelemetry);
+  packet.gyroX = static_cast<int16_t>(measurement.imu.gyroX_dps * AvionicsConfig::Bmi270GyroDpsToLsbTelemetry);
+  packet.gyroY = static_cast<int16_t>(measurement.imu.gyroY_dps * AvionicsConfig::Bmi270GyroDpsToLsbTelemetry);
+  packet.gyroZ = static_cast<int16_t>(measurement.imu.gyroZ_dps * AvionicsConfig::Bmi270GyroDpsToLsbTelemetry);
 
   packet.pressureScaled = scalePressure(measurement.pressurePa);
   packet.triboVoltage = static_cast<uint16_t>(measurement.ina226.busVoltageV * 1000.0f); // Convert V to mV

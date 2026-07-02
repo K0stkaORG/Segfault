@@ -7,7 +7,7 @@ namespace AvionicsConfig {
 constexpr uint32_t SerialBaud = 115200;
 
 constexpr uint32_t TelemetryIntervalMs = 500;
-constexpr uint32_t BeforeLaunchHeartbeatIntervalMs = 500;
+constexpr uint32_t BeforeLaunchHeartbeatIntervalMs = 10000;     // CHECK DEBUG INTERVAL!
 constexpr uint32_t MeasurementIntervalMs = 20;
 
 constexpr bool EnableSerial = true;              // DEBUG ONLY!
@@ -29,6 +29,10 @@ constexpr uint32_t I2cClockHz = 400000;
 
 constexpr uint8_t Bmp280I2cAddress = 0x77;
 constexpr uint8_t Bmi270I2cAddress = 0x68;
+constexpr float Bmi270AccelLsbToG = 1.0f / 4096.0f;
+constexpr float Bmi270GyroLsbToDps = 1.0f / 16.4f;
+constexpr float Bmi270AccelGToLsbTelemetry = 16384.0f;
+constexpr float Bmi270GyroDpsToLsbTelemetry = 16.4f;
 constexpr uint8_t Ina226I2cAddress = 0x40;
 
 constexpr uint8_t GpsUartPort = 1;
