@@ -40,6 +40,12 @@ void StateLogic::tick(uint32_t nowMs,
       measurements_->setBaseline(baseline);
       store_->saveBaseline(baseline);
     }
+  } else if (currentState < FlightState::Flight && previousState_ >= FlightState::Flight) {
+    if (measurements_ != nullptr) {
+      measurements_->setBaseliningEnabled(true);
+      highAccelStartMs_ = 0;
+      maxAltitude_m_ = 0.0f;
+    }
   }
   
   previousState_ = currentState;

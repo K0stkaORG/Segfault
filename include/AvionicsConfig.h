@@ -61,12 +61,16 @@ constexpr int ParachuteServoStowedAngle = 0;
 constexpr int ParachuteServoDeployedAngle = 90;
 constexpr int ParachuteServoFrequencyHz = 50;
 
-constexpr float LaunchAccelThresholdMps2 = 25.0f;
-constexpr uint32_t LaunchAccelDurationMs = 100;
-constexpr float ApogeeAltitudeDropM = 5.0f;
+//constexpr float LaunchAccelThresholdMps2 = 25.0f;
+constexpr float LaunchAccelThresholdMps2 = 0.5f; // DEBUG ONLY!
+//constexpr uint32_t LaunchAccelDurationMs = 100;
+constexpr uint32_t LaunchAccelDurationMs = 50; // DEBUG ONLY!
+//constexpr float ApogeeAltitudeDropM = 5.0f;
+constexpr float ApogeeAltitudeDropM = 1.0f; // DEBUG ONLY!
 constexpr float ApogeeVelocityThresholdUpMps = 5.0f;
 constexpr float ApogeeVelocityThresholdDownMps = -15.0f;
-constexpr uint32_t ApogeeFailsafeTimerMs = 11400;
+//constexpr uint32_t ApogeeFailsafeTimerMs = 11400;
+constexpr uint32_t ApogeeFailsafeTimerMs = 114000; // DEBUG ONLY!
 
 //constexpr double BaseLatitudeDeg = 49.7983333333;
 //constexpr double BaseLongitudeDeg = 16.6866666667;

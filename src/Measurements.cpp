@@ -123,6 +123,10 @@ SensorBaseline MeasurementService::getBaseline() const {
   return baseline_;
 }
 
+void MeasurementService::resetBaseline() {
+  baseline_ = SensorBaseline{};
+}
+
 bool MeasurementService::beginBmp280() {
   if (!bmp280_.begin(AvionicsConfig::Bmp280I2cAddress)) {
     return false;

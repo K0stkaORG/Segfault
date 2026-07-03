@@ -104,6 +104,7 @@ class MeasurementService {
   void setBaseliningEnabled(bool enabled);
   void setBaseline(const SensorBaseline& baseline);
   SensorBaseline getBaseline() const;
+  void resetBaseline();
 
  private:
   struct Bmi270I2cContext {

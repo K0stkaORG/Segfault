@@ -4,7 +4,7 @@
 #include "AvionicsConfig.h"
 #include <Arduino.h>
 
-void RemoteControlService::tick(ParachuteServo &servo, FlightFsm &fsm) {
+void RemoteControlService::tick(ParachuteServo &servo, FlightFsm &fsm, MeasurementService &measurements) {
   if (TelemetryService::isTxInProgress()) {
     inRxMode_ = false;
     return;
@@ -44,6 +44,17 @@ void RemoteControlService::tick(ParachuteServo &servo, FlightFsm &fsm) {
               if (AvionicsConfig::EnableSerial) {
                 Serial.print(F("RX Cmd: Set State "));
                 Serial.println(buffer[3]);
+              }
+            }
+          } else if (buffer[2] == 0x67 && buffer[3] == 0x67) {
+            if (fsm.currentState() < FlightState::Flight) {
+              measurements.resetBaseline();
+              if (AvionicsConfig::EnableSerial) {
+                Serial.println(F("RX Cmd: Reset Baseline"));
+              }
+            } else {
+              if (AvionicsConfig::EnableSerial) {
+                Serial.println(F("RX Cmd: Reset Rejected (Already in flight)"));
               }
             }
           }

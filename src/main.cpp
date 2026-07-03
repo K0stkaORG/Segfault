@@ -70,5 +70,5 @@ void loop() {
   measurements.tick(nowMs);
   stateLogic.tick(nowMs, flightFsm, measurements.latest(), telemetry, parachuteServo);
   telemetry.tick(nowMs, flightFsm, measurements.latest(), persistentStore);
-  remoteControl.tick(parachuteServo, flightFsm);
+  remoteControl.tick(parachuteServo, flightFsm, measurements);
 }
