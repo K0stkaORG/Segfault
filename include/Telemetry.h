@@ -7,6 +7,7 @@
 
 #pragma pack(push, 1)
 struct RocketTelemetry {
+  uint16_t syncWord;
   uint16_t timestampMs;
   uint8_t packetId;
   uint8_t stateFlags;
@@ -19,6 +20,7 @@ struct RocketTelemetry {
   int16_t gyroZ;
 
   int16_t kfAltitudeAgl;
+  uint16_t rawPressure;
   uint16_t triboVoltage;
   uint8_t batteryVoltage;
 
@@ -29,7 +31,7 @@ struct RocketTelemetry {
 };
 #pragma pack(pop)
 
-static_assert(sizeof(RocketTelemetry) == 29, "RocketTelemetry must be 29 bytes");
+static_assert(sizeof(RocketTelemetry) == 33, "RocketTelemetry must be 33 bytes");
 
 class TelemetryService {
  public:

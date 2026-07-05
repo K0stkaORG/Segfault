@@ -126,6 +126,7 @@ RocketTelemetry TelemetryService::buildPacket(
     const MeasurementSnapshot &measurement) {
   RocketTelemetry packet{};
 
+  packet.syncWord = AvionicsConfig::TelemetrySyncWord;
   packet.timestampMs = static_cast<uint16_t>(nowMs);
   packet.packetId = 0;
   packet.stateFlags = fsm.stateFlags();
@@ -138,6 +139,7 @@ RocketTelemetry TelemetryService::buildPacket(
   packet.gyroZ = static_cast<int16_t>(measurement.imu.gyroZ_dps * AvionicsConfig::Bmi270GyroDpsToLsbTelemetry);
 
   packet.kfAltitudeAgl = static_cast<int16_t>(measurement.aglAltitude_m);
+  packet.rawPressure = scalePressure(measurement.pressurePa);
   packet.triboVoltage = static_cast<uint16_t>(measurement.ina226.busVoltageV * 1000.0f); // Convert V to mV
   packet.batteryVoltage = scaleBatteryMilliVolts(measurement.batteryMilliVolts);
 

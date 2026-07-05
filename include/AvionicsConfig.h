@@ -19,9 +19,10 @@ constexpr float LoRaBandwidthKHz = 250.0f;
 constexpr uint8_t LoRaSpreadingFactor = 8;
 constexpr uint8_t LoRaCodingRate = 8;
 constexpr uint8_t LoRaSyncWord = 0x67;
-constexpr int8_t LoRaTxPowerDbm = 20;
+constexpr int8_t LoRaTxPowerDbm = 10;
 constexpr uint16_t LoRaPreambleLength = 8;
 constexpr bool LoRaUseDio2RfSwitch = true;
+constexpr uint16_t TelemetrySyncWord = 0x5AA5;
 
 constexpr uint8_t I2cSdaPin = 21;
 constexpr uint8_t I2cSclPin = 22;
