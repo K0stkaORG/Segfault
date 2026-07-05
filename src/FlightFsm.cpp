@@ -8,15 +8,28 @@ void FlightFsm::attachPersistentStore(PersistentStore &persistentStore) {
   persistentStore_ = &persistentStore;
 }
 
+void FlightFsm::registerListener(FlightFsmListener *listener) {
+  listener_ = listener;
+}
+
 FlightState FlightFsm::currentState() const {
   return state_;
 }
 
 void FlightFsm::setState(FlightState state) {
+  if (state_ == state) {
+    return;
+  }
+
+  FlightState oldState = state_;
   state_ = state;
 
   if (persistentStore_ != nullptr) {
     persistentStore_->saveFlightState(state_);
+  }
+
+  if (listener_ != nullptr) {
+    listener_->onStateTransition(oldState, state_);
   }
 }
 

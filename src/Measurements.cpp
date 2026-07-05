@@ -12,11 +12,11 @@ bool MeasurementService::begin() {
   Wire.begin(AvionicsConfig::I2cSdaPin, AvionicsConfig::I2cSclPin);
   Wire.setClock(AvionicsConfig::I2cClockHz);
 
+  snapshot_.pmuOk = beginPmu();
   snapshot_.bmp280Ok = beginBmp280();
   snapshot_.bmi270Ok = beginBmi270();
   snapshot_.gpsOk = beginGps();
   snapshot_.ina226Ok = beginIna226();
-  snapshot_.pmuOk = beginPmu();
   nextSampleAtMs_ = 0;
 
   pinMode(AvionicsConfig::Ky024AnalogPin, INPUT);

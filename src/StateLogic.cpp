@@ -5,9 +5,10 @@
 void StateLogic::begin(PersistentStore &store, FlightFsm &fsm, MeasurementService &measurements) {
   store_ = &store;
   measurements_ = &measurements;
-  previousState_ = fsm.currentState();
+  fsm.registerListener(this);
   
-  if (previousState_ >= FlightState::Flight) {
+  FlightState initial = fsm.currentState();
+  if (initial >= FlightState::Flight) {
     SensorBaseline savedBaseline;
     if (store_->loadBaseline(savedBaseline)) {
       measurements_->setBaseline(savedBaseline);
@@ -18,37 +19,38 @@ void StateLogic::begin(PersistentStore &store, FlightFsm &fsm, MeasurementServic
   }
 }
 
-void StateLogic::tick(uint32_t nowMs,
-                      FlightFsm &fsm,
-                      const MeasurementSnapshot &measurement,
-                      TelemetryService &telemetry,
-                      ParachuteServo &parachute) {
-  FlightState currentState = fsm.currentState();
-
-  if (currentState >= FlightState::Flight && previousState_ < FlightState::Flight) {
+void StateLogic::onStateTransition(FlightState oldState, FlightState newState) {
+  if (newState >= FlightState::Flight && oldState < FlightState::Flight) {
     if (measurements_ != nullptr && store_ != nullptr) {
       measurements_->setBaseliningEnabled(false);
       
       SensorBaseline baseline = measurements_->getBaseline();
+      const MeasurementSnapshot &measurement = measurements_->latest();
       if (measurement.gps.timeValid) {
          baseline.flightStartUsesGps = true;
          baseline.flightStartTimeMs = measurement.gps.timeOfDayMs;
       } else {
          baseline.flightStartUsesGps = false;
-         baseline.flightStartTimeMs = nowMs;
+         baseline.flightStartTimeMs = millis();
       }
       measurements_->setBaseline(baseline);
       store_->saveBaseline(baseline);
     }
-  } else if (currentState < FlightState::Flight && previousState_ >= FlightState::Flight) {
+  } else if (newState < FlightState::Flight && oldState >= FlightState::Flight) {
     if (measurements_ != nullptr) {
       measurements_->setBaseliningEnabled(true);
       highAccelStartMs_ = 0;
       maxAltitude_m_ = 0.0f;
     }
   }
-  
-  previousState_ = currentState;
+}
+
+void StateLogic::tick(uint32_t nowMs,
+                      FlightFsm &fsm,
+                      const MeasurementSnapshot &measurement,
+                      TelemetryService &telemetry,
+                      ParachuteServo &parachute) {
+  FlightState currentState = fsm.currentState();
 
   switch (currentState) {
     case FlightState::BeforeLaunch:
@@ -116,7 +118,6 @@ void StateLogic::tickFlight(uint32_t nowMs, FlightFsm &fsm, const MeasurementSna
   }
 
   bool primaryTrigger = (measurement.aglAltitude_m < (maxAltitude_m_ - AvionicsConfig::ApogeeAltitudeDropM)) &&
-                        (measurement.verticalVelocity_mps >= AvionicsConfig::ApogeeVelocityThresholdDownMps) &&
                         (measurement.verticalVelocity_mps <= AvionicsConfig::ApogeeVelocityThresholdUpMps);
 
   bool backupTrigger = false;

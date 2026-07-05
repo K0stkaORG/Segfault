@@ -7,9 +7,10 @@
 #include "PersistentStore.h"
 #include "ParachuteServo.h"
 
-class StateLogic {
+class StateLogic : public FlightFsmListener {
  public:
   void begin(PersistentStore &store, FlightFsm &fsm, MeasurementService &measurements);
+  void onStateTransition(FlightState oldState, FlightState newState) override;
   void tick(uint32_t nowMs,
             FlightFsm &fsm,
             const MeasurementSnapshot &measurement,
@@ -27,7 +28,6 @@ class StateLogic {
 
   PersistentStore *store_ = nullptr;
   MeasurementService *measurements_ = nullptr;
-  FlightState previousState_ = FlightState::BeforeLaunch;
 
   uint32_t highAccelStartMs_ = 0;
   float maxAltitude_m_ = 0.0f;

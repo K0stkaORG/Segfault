@@ -19,7 +19,7 @@ constexpr float LoRaBandwidthKHz = 250.0f;
 constexpr uint8_t LoRaSpreadingFactor = 8;
 constexpr uint8_t LoRaCodingRate = 8;
 constexpr uint8_t LoRaSyncWord = 0x67;
-constexpr int8_t LoRaTxPowerDbm = 10;
+constexpr int8_t LoRaTxPowerDbm = 20;
 constexpr uint16_t LoRaPreambleLength = 8;
 constexpr bool LoRaUseDio2RfSwitch = true;
 
@@ -68,9 +68,8 @@ constexpr uint32_t LaunchAccelDurationMs = 50; // DEBUG ONLY!
 //constexpr float ApogeeAltitudeDropM = 5.0f;
 constexpr float ApogeeAltitudeDropM = 1.0f; // DEBUG ONLY!
 constexpr float ApogeeVelocityThresholdUpMps = 5.0f;
-constexpr float ApogeeVelocityThresholdDownMps = -15.0f;
 //constexpr uint32_t ApogeeFailsafeTimerMs = 11400;
-constexpr uint32_t ApogeeFailsafeTimerMs = 114000; // DEBUG ONLY!
+constexpr uint32_t ApogeeFailsafeTimerMs = 11400000; // DEBUG ONLY!
 
 //constexpr double BaseLatitudeDeg = 49.7983333333;
 //constexpr double BaseLongitudeDeg = 16.6866666667;
