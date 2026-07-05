@@ -79,10 +79,7 @@ void TelemetryService::tick(uint32_t nowMs,
   RocketTelemetry packet = TelemetryService::buildPacket(nowMs, fsm, measurement);
   packet.packetId = packetCounter_;
 
-  const bool sent = send(packet);
-  if (sent) {
-    persistentStore.savePacketCounter(packetCounter_);
-  }
+  send(packet);
 
   nextTelemetryAtMs_ = nowMs + intervalMs_;
 }

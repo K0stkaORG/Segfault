@@ -31,4 +31,6 @@ class StateLogic : public FlightFsmListener {
 
   uint32_t highAccelStartMs_ = 0;
   float maxAltitude_m_ = 0.0f;
+  uint32_t flightStartTimeMs_ = 0;
+  uint32_t lastNvsWriteMs_ = 0;
 };

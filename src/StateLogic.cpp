@@ -14,8 +14,14 @@ void StateLogic::begin(PersistentStore &store, FlightFsm &fsm, MeasurementServic
       measurements_->setBaseline(savedBaseline);
     }
     measurements_->setBaseliningEnabled(false);
+    
+    uint32_t loadedElapsedMs = store_->loadElapsedFlightTime();
+    flightStartTimeMs_ = millis() - loadedElapsedMs;
+    lastNvsWriteMs_ = millis();
   } else {
     measurements_->setBaseliningEnabled(true);
+    flightStartTimeMs_ = 0;
+    lastNvsWriteMs_ = 0;
   }
 }
 
@@ -25,22 +31,23 @@ void StateLogic::onStateTransition(FlightState oldState, FlightState newState) {
       measurements_->setBaseliningEnabled(false);
       
       SensorBaseline baseline = measurements_->getBaseline();
-      const MeasurementSnapshot &measurement = measurements_->latest();
-      if (measurement.gps.timeValid) {
-         baseline.flightStartUsesGps = true;
-         baseline.flightStartTimeMs = measurement.gps.timeOfDayMs;
-      } else {
-         baseline.flightStartUsesGps = false;
-         baseline.flightStartTimeMs = millis();
-      }
       measurements_->setBaseline(baseline);
       store_->saveBaseline(baseline);
+
+      flightStartTimeMs_ = millis();
+      lastNvsWriteMs_ = millis();
+      store_->saveElapsedFlightTime(0);
     }
   } else if (newState < FlightState::Flight && oldState >= FlightState::Flight) {
     if (measurements_ != nullptr) {
       measurements_->setBaseliningEnabled(true);
       highAccelStartMs_ = 0;
       maxAltitude_m_ = 0.0f;
+      flightStartTimeMs_ = 0;
+      lastNvsWriteMs_ = 0;
+      if (store_ != nullptr) {
+        store_->saveElapsedFlightTime(0);
+      }
     }
   }
 }
@@ -120,23 +127,16 @@ void StateLogic::tickFlight(uint32_t nowMs, FlightFsm &fsm, const MeasurementSna
   bool primaryTrigger = (measurement.aglAltitude_m < (maxAltitude_m_ - AvionicsConfig::ApogeeAltitudeDropM)) &&
                         (measurement.verticalVelocity_mps <= AvionicsConfig::ApogeeVelocityThresholdUpMps);
 
-  bool backupTrigger = false;
-  SensorBaseline baseline = measurements_->getBaseline();
-  if (baseline.flightStartUsesGps) {
-    if (measurement.gps.timeValid) {
-      uint32_t currentGpsMs = measurement.gps.timeOfDayMs;
-      uint32_t elapsed = (currentGpsMs >= baseline.flightStartTimeMs) ? 
-                         (currentGpsMs - baseline.flightStartTimeMs) : 
-                         (currentGpsMs + 86400000 - baseline.flightStartTimeMs);
-      if (elapsed > AvionicsConfig::ApogeeFailsafeTimerMs) {
-        backupTrigger = true;
-      }
-    }
-  } else {
-    if (nowMs - baseline.flightStartTimeMs > AvionicsConfig::ApogeeFailsafeTimerMs) {
-      backupTrigger = true;
+  uint32_t elapsedMs = nowMs - flightStartTimeMs_;
+
+  if (nowMs - lastNvsWriteMs_ >= 1000) {
+    lastNvsWriteMs_ = nowMs;
+    if (store_ != nullptr) {
+      store_->saveElapsedFlightTime(elapsedMs);
     }
   }
+
+  bool backupTrigger = (elapsedMs > AvionicsConfig::ApogeeFailsafeTimerMs);
 
   if (primaryTrigger || backupTrigger) {
     fsm.setState(FlightState::ApogeeReached);

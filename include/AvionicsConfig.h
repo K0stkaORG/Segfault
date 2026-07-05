@@ -6,12 +6,12 @@ namespace AvionicsConfig {
 
 constexpr uint32_t SerialBaud = 115200;
 
-constexpr uint32_t TelemetryIntervalMs = 500;
+constexpr uint32_t TelemetryIntervalMs = 350;
 constexpr uint32_t BeforeLaunchHeartbeatIntervalMs = 10000;     // CHECK DEBUG INTERVAL!
 constexpr uint32_t MeasurementIntervalMs = 20;
 
-constexpr bool EnableSerial = true;              // DEBUG ONLY!
-constexpr bool EnableTelemetrySerialDump = true; // DEBUG ONLY!
+constexpr bool EnableSerial = false;              // DEBUG ONLY!
+constexpr bool EnableTelemetrySerialDump = false; // DEBUG ONLY!
 
 constexpr long LoRaFrequencyHz = 439700000L;
 constexpr float LoRaFrequencyMHz = 439.7f;
