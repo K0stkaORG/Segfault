@@ -16,8 +16,6 @@ class PersistentStore {
 
   FlightState loadFlightState();
   void saveFlightState(FlightState state);
-  uint8_t loadPacketCounter();
-  void savePacketCounter(uint8_t packetCounter);
   void saveInitStatus(bool bmp280Ok, bool bmi270Ok, bool gpsOk, bool loraOk);
 
   bool loadBaseline(SensorBaseline &baseline);

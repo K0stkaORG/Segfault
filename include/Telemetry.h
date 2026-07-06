@@ -36,7 +36,6 @@ static_assert(sizeof(RocketTelemetry) == 33, "RocketTelemetry must be 33 bytes")
 class TelemetryService {
  public:
   bool begin();
-  void setPacketCounter(uint8_t packetCounter);
   uint8_t packetCounter() const;
   void setInterval(uint32_t intervalMs);
   void disable();

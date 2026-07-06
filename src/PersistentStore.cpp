@@ -4,7 +4,6 @@
 
 namespace {
 constexpr const char *KeyFlightState = "state";
-constexpr const char *KeyPacketCounter = "pkt";
 constexpr const char *KeyInitStatus = "init";
 }  // namespace
 
@@ -37,20 +36,6 @@ FlightState PersistentStore::loadFlightState() {
 void PersistentStore::saveFlightState(FlightState state) {
   if (ready_) {
     preferences_.putUChar(KeyFlightState, static_cast<uint8_t>(state));
-  }
-}
-
-uint8_t PersistentStore::loadPacketCounter() {
-  if (!ready_) {
-    return 0;
-  }
-
-  return preferences_.getUChar(KeyPacketCounter, 0);
-}
-
-void PersistentStore::savePacketCounter(uint8_t packetCounter) {
-  if (ready_) {
-    preferences_.putUChar(KeyPacketCounter, packetCounter);
   }
 }
 

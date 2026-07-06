@@ -44,10 +44,6 @@ bool TelemetryService::begin() {
   return ready_;
 }
 
-void TelemetryService::setPacketCounter(uint8_t packetCounter) {
-  packetCounter_ = packetCounter;
-}
-
 uint8_t TelemetryService::packetCounter() const {
   return packetCounter_;
 }
