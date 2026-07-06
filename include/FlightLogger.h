@@ -47,9 +47,6 @@ class FlightLogger {
   void erase();
   bool log(uint32_t nowMs, const FlightFsm &fsm, const MeasurementSnapshot &measurement);
 
-  bool isReady() const { return ready_; }
-  uint32_t getWriteOffset() const { return writeOffset_; }
-
  private:
   static void loggingTask(void* parameter);
   uint16_t calculateFletcher16(const uint8_t *data, size_t len);

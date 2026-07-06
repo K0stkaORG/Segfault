@@ -18,14 +18,6 @@ bool ParachuteServo::attached() const {
   return attached_;
 }
 
-int ParachuteServo::controlPin() const {
-  return controlPin_;
-}
-
-int ParachuteServo::angle() const {
-  return angle_;
-}
-
 bool ParachuteServo::writeAngle(int angle) {
   if (!attached_) {
     return false;

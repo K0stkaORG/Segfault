@@ -7,9 +7,7 @@ public:
   bool begin(int controlPin);
   
   bool attached() const;
-  int controlPin() const;
-  int angle() const;
-
+  
   bool writeAngle(int angle);
   bool stow();
   bool deploy();

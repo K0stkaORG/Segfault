@@ -4,7 +4,6 @@
 
 namespace {
 constexpr const char *KeyFlightState = "state";
-constexpr const char *KeyInitStatus = "init";
 }  // namespace
 
 bool PersistentStore::begin() {
@@ -37,31 +36,6 @@ void PersistentStore::saveFlightState(FlightState state) {
   if (ready_) {
     preferences_.putUChar(KeyFlightState, static_cast<uint8_t>(state));
   }
-}
-
-void PersistentStore::saveInitStatus(bool bmp280Ok,
-                                     bool bmi270Ok,
-                                     bool gpsOk,
-                                     bool loraOk) {
-  if (!ready_) {
-    return;
-  }
-
-  uint8_t status = 0;
-  if (bmp280Ok) {
-    status |= 1U << 0;
-  }
-  if (bmi270Ok) {
-    status |= 1U << 1;
-  }
-  if (gpsOk) {
-    status |= 1U << 2;
-  }
-  if (loraOk) {
-    status |= 1U << 3;
-  }
-
-  preferences_.putUChar(KeyInitStatus, status);
 }
 
 bool PersistentStore::loadBaseline(SensorBaseline &baseline) {

@@ -38,13 +38,11 @@ class TelemetryService {
   bool begin();
   uint8_t packetCounter() const;
   void setInterval(uint32_t intervalMs);
-  void disable();
   void tick(uint32_t nowMs,
             const FlightFsm &fsm,
             const MeasurementSnapshot &measurement,
             PersistentStore &persistentStore);
   bool send(const RocketTelemetry &packet);
-  bool isReady() const;
   static bool isTxInProgress();
 
   static RocketTelemetry buildPacket(uint32_t nowMs,

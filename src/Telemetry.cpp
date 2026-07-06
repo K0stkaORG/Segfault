@@ -58,10 +58,6 @@ void TelemetryService::setInterval(uint32_t intervalMs) {
   nextTelemetryAtMs_ = 0;
 }
 
-void TelemetryService::disable() {
-  enabled_ = false;
-}
-
 void TelemetryService::tick(uint32_t nowMs,
                             const FlightFsm &fsm,
                             const MeasurementSnapshot &measurement,
@@ -107,10 +103,6 @@ bool TelemetryService::send(const RocketTelemetry &packet) {
   }
   packetCounter_ = packet.packetId + 1;
   return true;
-}
-
-bool TelemetryService::isReady() const {
-  return ready_;
 }
 
 RocketTelemetry TelemetryService::buildPacket(

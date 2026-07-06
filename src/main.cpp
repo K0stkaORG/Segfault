@@ -37,11 +37,6 @@ void setup() {
   const bool telemetryOk = telemetry.begin();
   parachuteServo.begin(AvionicsConfig::ParachuteServoPin);
 
-  persistentStore.saveInitStatus(measurements.latest().bmp280Ok,
-                                 measurements.latest().bmi270Ok,
-                                 measurements.latest().gpsOk,
-                                 telemetryOk);
-
   if (AvionicsConfig::EnableSerial) {
     Serial.println(F("<Testing In Production>"));
     Serial.print(F("NVS: "));

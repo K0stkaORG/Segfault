@@ -16,7 +16,6 @@ class PersistentStore {
 
   FlightState loadFlightState();
   void saveFlightState(FlightState state);
-  void saveInitStatus(bool bmp280Ok, bool bmi270Ok, bool gpsOk, bool loraOk);
 
   bool loadBaseline(SensorBaseline &baseline);
   void saveBaseline(const SensorBaseline &baseline);
