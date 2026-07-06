@@ -147,4 +147,5 @@ class MeasurementService {
   SensorBaseline baseline_{};
   KalmanState kfState_{};
   uint32_t lastKfUpdateMs_ = 0;
+  bool kfInitialized_ = false;
 };

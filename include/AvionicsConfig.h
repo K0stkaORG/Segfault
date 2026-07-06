@@ -70,7 +70,7 @@ constexpr uint32_t LaunchAccelDurationMs = 50; // DEBUG ONLY!
 constexpr float ApogeeAltitudeDropM = 1.0f; // DEBUG ONLY!
 constexpr float ApogeeVelocityThresholdUpMps = 5.0f;
 //constexpr uint32_t ApogeeFailsafeTimerMs = 11400;
-constexpr uint32_t ApogeeFailsafeTimerMs = 11400000; // DEBUG ONLY!
+constexpr uint32_t ApogeeFailsafeTimerMs = 11400; // DEBUG ONLY!
 
 //constexpr double BaseLatitudeDeg = 49.7983333333;
 //constexpr double BaseLongitudeDeg = 16.6866666667;
