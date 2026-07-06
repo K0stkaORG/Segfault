@@ -84,4 +84,14 @@ constexpr float FlightLogChuteVelocityThresholdMps = -2.0f;
 
 constexpr const char *NvsNamespace = "rocket";
 
+// Recovery Web Server Configurations
+constexpr const char *RecoveryWifiSsid = "TIPRocket";
+constexpr const char *RecoveryWifiPassword = "hlinena67";
+// We use a custom struct or simple array representation for IP addresses 
+// since IPAddress class requires including <WiFi.h> or <IPAddress.h> which isn't always clean in AvionicsConfig.h.
+// Actually, IPAddress can be constructed in the RecoveryService itself using raw bytes.
+constexpr uint8_t RecoveryLocalIp[4] = {172, 27, 67, 1};
+constexpr uint8_t RecoveryGatewayIp[4] = {172, 27, 67, 1};
+constexpr uint8_t RecoverySubnetMask[4] = {255, 255, 255, 240};
+
 }  // namespace AvionicsConfig

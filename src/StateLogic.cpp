@@ -1,11 +1,13 @@
 #include "StateLogic.h"
 #include "AvionicsConfig.h"
 #include "FlightLogger.h"
+#include "RecoveryService.h"
 
-void StateLogic::begin(PersistentStore &store, FlightFsm &fsm, MeasurementService &measurements, FlightLogger &logger) {
+void StateLogic::begin(PersistentStore &store, FlightFsm &fsm, MeasurementService &measurements, FlightLogger &logger, RecoveryService &recovery) {
   store_ = &store;
   measurements_ = &measurements;
   logger_ = &logger;
+  recovery_ = &recovery;
   fsm.registerListener(this);
   
   FlightState initial = fsm.currentState();
@@ -25,6 +27,10 @@ void StateLogic::begin(PersistentStore &store, FlightFsm &fsm, MeasurementServic
     lastNvsWriteMs_ = 0;
   }
   lastLogWriteMs_ = 0;
+
+  if (initial == FlightState::ChuteDeployed) {
+    recovery_->start();
+  }
 }
 
 void StateLogic::onStateTransition(FlightState oldState, FlightState newState) {
@@ -57,6 +63,20 @@ void StateLogic::onStateTransition(FlightState oldState, FlightState newState) {
   if (newState == FlightState::Armed) {
     if (logger_ != nullptr) {
       logger_->erase();
+    }
+  }
+
+  // Start recovery web server when transitioning to ChuteDeployed
+  if (newState == FlightState::ChuteDeployed) {
+    if (recovery_ != nullptr) {
+      recovery_->start();
+    }
+  }
+
+  // Stop recovery web server when transitioning out of ChuteDeployed
+  if (oldState == FlightState::ChuteDeployed && newState != FlightState::ChuteDeployed) {
+    if (recovery_ != nullptr) {
+      recovery_->stop();
     }
   }
 }
@@ -168,6 +188,10 @@ void StateLogic::tickChuteDeployed(uint32_t nowMs, FlightFsm &fsm, const Measure
   // Logging condition 4: Chute mode AND vertical velocity < threshold (falling down)
   if (measurement.verticalVelocity_mps < AvionicsConfig::FlightLogChuteVelocityThresholdMps) {
     tryLog(nowMs, fsm, measurement);
+  }
+
+  if (recovery_ != nullptr) {
+    recovery_->tick();
   }
 }
 

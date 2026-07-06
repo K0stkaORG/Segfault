@@ -8,10 +8,15 @@
 #include "ParachuteServo.h"
 
 class FlightLogger;
+class RecoveryService;
 
 class StateLogic : public FlightFsmListener {
  public:
-  void begin(PersistentStore &store, FlightFsm &fsm, MeasurementService &measurements, FlightLogger &logger);
+  void begin(PersistentStore &store,
+             FlightFsm &fsm,
+             MeasurementService &measurements,
+             FlightLogger &logger,
+             RecoveryService &recovery);
   void onStateTransition(FlightState oldState, FlightState newState) override;
   void tick(uint32_t nowMs,
             FlightFsm &fsm,
@@ -33,6 +38,7 @@ class StateLogic : public FlightFsmListener {
   PersistentStore *store_ = nullptr;
   MeasurementService *measurements_ = nullptr;
   FlightLogger *logger_ = nullptr;
+  RecoveryService *recovery_ = nullptr;
 
   uint32_t highAccelStartMs_ = 0;
   float maxAltitude_m_ = 0.0f;
