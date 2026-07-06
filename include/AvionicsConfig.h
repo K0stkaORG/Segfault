@@ -81,7 +81,7 @@ constexpr const char *BaseGridSquare = "JN89IT";
 constexpr uint32_t FlightLogSyncWord = 0x5AA55AA5;
 constexpr uint32_t FlightLogIntervalMs = 40;
 constexpr float FlightLogArmedAccelThresholdG = 1.0f;
-constexpr float FlightLogChuteAccelThresholdG = 1.0f;
+constexpr float FlightLogChuteVelocityThresholdMps = -2.0f;
 
 constexpr const char *NvsNamespace = "rocket";
 

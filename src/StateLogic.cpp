@@ -165,10 +165,8 @@ void StateLogic::tickApogee(uint32_t nowMs, FlightFsm &fsm, const MeasurementSna
 void StateLogic::tickChuteDeployed(uint32_t nowMs, FlightFsm &fsm, const MeasurementSnapshot &measurement) {
   if (measurements_ == nullptr) return;
 
-  // Logging condition 4: Chute mode AND (accelZ > 1g OR accelZ < -1g)
-  float compensatedAccelZ = (measurement.imu.accelZ_g - measurements_->getBaseline().accelZOffset_g);
-  if (compensatedAccelZ > AvionicsConfig::FlightLogChuteAccelThresholdG || 
-      compensatedAccelZ < -AvionicsConfig::FlightLogChuteAccelThresholdG) {
+  // Logging condition 4: Chute mode AND vertical velocity < threshold (falling down)
+  if (measurement.verticalVelocity_mps < AvionicsConfig::FlightLogChuteVelocityThresholdMps) {
     tryLog(nowMs, fsm, measurement);
   }
 }
