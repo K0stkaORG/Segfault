@@ -44,8 +44,6 @@ void setup() {
     Serial.println(F("<Testing In Production>"));
     Serial.print(F("NVS: "));
     Serial.println(persistentOk ? F("ok") : F("failed"));
-    Serial.print(F("Boot count: "));
-    Serial.println(persistentStore.bootCount());
     Serial.print(F("State: "));
     Serial.println(flightFsm.stateName());
     Serial.print(F("BMP280: "));

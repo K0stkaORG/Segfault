@@ -14,7 +14,6 @@ class PersistentStore {
   bool begin();
   void end();
 
-  uint32_t bootCount() const;
   FlightState loadFlightState();
   void saveFlightState(FlightState state);
   uint8_t loadPacketCounter();
@@ -30,5 +29,4 @@ class PersistentStore {
  private:
   Preferences preferences_;
   bool ready_ = false;
-  uint32_t bootCount_ = 0;
 };

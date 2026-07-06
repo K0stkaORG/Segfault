@@ -3,7 +3,6 @@
 #include "AvionicsConfig.h"
 
 namespace {
-constexpr const char *KeyBootCount = "boot";
 constexpr const char *KeyFlightState = "state";
 constexpr const char *KeyPacketCounter = "pkt";
 constexpr const char *KeyInitStatus = "init";
@@ -11,14 +10,7 @@ constexpr const char *KeyInitStatus = "init";
 
 bool PersistentStore::begin() {
   ready_ = preferences_.begin(AvionicsConfig::NvsNamespace, false);
-  if (!ready_) {
-    bootCount_ = 0;
-    return false;
-  }
-
-  bootCount_ = preferences_.getUInt(KeyBootCount, 0) + 1;
-  preferences_.putUInt(KeyBootCount, bootCount_);
-  return true;
+  return ready_;
 }
 
 void PersistentStore::end() {
@@ -26,10 +18,6 @@ void PersistentStore::end() {
     preferences_.end();
     ready_ = false;
   }
-}
-
-uint32_t PersistentStore::bootCount() const {
-  return bootCount_;
 }
 
 FlightState PersistentStore::loadFlightState() {
