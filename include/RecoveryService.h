@@ -10,11 +10,13 @@ class RecoveryService {
   bool begin();
   void start();
   void stop();
-  void tick();
   bool isStarted() const { return started_; }
 
  private:
+  static void serverTask(void *param);
+
   WebServer server_{80};
   const esp_partition_t* partition_ = nullptr;
-  bool started_ = false;
+  TaskHandle_t serverTaskHandle_ = nullptr;
+  volatile bool started_ = false;
 };

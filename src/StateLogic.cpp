@@ -189,10 +189,6 @@ void StateLogic::tickChuteDeployed(uint32_t nowMs, FlightFsm &fsm, const Measure
   if (measurement.verticalVelocity_mps < AvionicsConfig::FlightLogChuteVelocityThresholdMps) {
     tryLog(nowMs, fsm, measurement);
   }
-
-  if (recovery_ != nullptr) {
-    recovery_->tick();
-  }
 }
 
 void StateLogic::tryLog(uint32_t nowMs, FlightFsm &fsm, const MeasurementSnapshot &measurement) {

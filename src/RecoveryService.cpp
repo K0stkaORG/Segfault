@@ -29,27 +29,25 @@ void RecoveryService::start() {
   WiFi.softAP(AvionicsConfig::RecoveryWifiSsid, AvionicsConfig::RecoveryWifiPassword);
 
   server_.on("/", HTTP_GET, [this]() {
-    WiFiClient client = server_.client();
-
     if (partition_ == nullptr) {
       server_.send(404, "text/plain", "Flight log partition not found!");
       return;
     }
 
+    server_.setContentLength(partition_->size);
     server_.sendHeader("Content-Disposition", "attachment; filename=\"flightlog.bin\"");
-    server_.sendHeader("Content-Length", String(partition_->size));
     server_.send(200, "application/octet-stream", "");
 
     uint8_t buffer[1024];
     uint32_t offset = 0;
     uint32_t totalSize = partition_->size;
 
-    while (offset < totalSize && client.connected()) {
+    while (offset < totalSize && server_.client().connected()) {
       uint32_t chunk = std::min((uint32_t)sizeof(buffer), totalSize - offset);
       if (esp_partition_read(partition_, offset, buffer, chunk) != ESP_OK) {
         break;
       }
-      client.write(buffer, chunk);
+      server_.sendContent((const char*)buffer, chunk);
       offset += chunk;
       vTaskDelay(pdMS_TO_TICKS(1)); // Yield to other tasks to prevent WDT reset
     }
@@ -57,6 +55,17 @@ void RecoveryService::start() {
 
   server_.begin();
   started_ = true;
+
+  // Spin up the server processing loop on a background task pinned to Core 1
+  xTaskCreatePinnedToCore(
+      RecoveryService::serverTask,
+      "recovery_server",
+      4096,
+      this,
+      1,
+      &serverTaskHandle_,
+      1
+  );
 
   if (AvionicsConfig::EnableSerial) {
     Serial.println(F("Recovery AP Started. SSID: TIPRocket, IP: 172.27.67.1"));
@@ -66,19 +75,27 @@ void RecoveryService::start() {
 void RecoveryService::stop() {
   if (!started_) return;
 
+  started_ = false;
+
+  if (serverTaskHandle_ != nullptr) {
+    vTaskDelete(serverTaskHandle_);
+    serverTaskHandle_ = nullptr;
+  }
+
   server_.close();
   WiFi.softAPdisconnect(true);
   WiFi.mode(WIFI_OFF);
-
-  started_ = false;
 
   if (AvionicsConfig::EnableSerial) {
     Serial.println(F("Recovery AP Stopped."));
   }
 }
 
-void RecoveryService::tick() {
-  if (started_) {
-    server_.handleClient();
+void RecoveryService::serverTask(void *param) {
+  RecoveryService *self = static_cast<RecoveryService*>(param);
+  while (self->started_) {
+    self->server_.handleClient();
+    vTaskDelay(pdMS_TO_TICKS(10)); // Yield to prevent CPU core starvation
   }
+  vTaskDelete(NULL);
 }
