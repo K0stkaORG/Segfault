@@ -78,6 +78,11 @@ constexpr double BaseLatitudeDeg = 49.16100; // DEBUG ONLY!
 constexpr double BaseLongitudeDeg = 16.56133; // DEBUG ONLY!
 constexpr const char *BaseGridSquare = "JN89IT";
 
+constexpr uint32_t FlightLogSyncWord = 0x5AA55AA5;
+constexpr uint32_t FlightLogIntervalMs = 40;
+constexpr float FlightLogArmedAccelThresholdG = 1.0f;
+constexpr float FlightLogChuteAccelThresholdG = 1.0f;
+
 constexpr const char *NvsNamespace = "rocket";
 
 }  // namespace AvionicsConfig

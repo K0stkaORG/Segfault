@@ -8,6 +8,7 @@
 #include "Telemetry.h"
 #include "ParachuteServo.h"
 #include "RemoteControl.h"
+#include "FlightLogger.h"
 
 namespace {
 PersistentStore persistentStore;
@@ -17,6 +18,7 @@ StateLogic stateLogic;
 FlightFsm flightFsm;
 ParachuteServo parachuteServo;
 RemoteControlService remoteControl;
+FlightLogger flightLogger;
 }  // namespace
 
 void setup() {
@@ -29,7 +31,8 @@ void setup() {
   flightFsm.setState(persistentStore.loadFlightState());
   telemetry.setPacketCounter(persistentStore.loadPacketCounter());
   
-  stateLogic.begin(persistentStore, flightFsm, measurements);
+  flightLogger.begin();
+  stateLogic.begin(persistentStore, flightFsm, measurements, flightLogger);
 
   const bool measurementsOk = measurements.begin();
   const bool telemetryOk = telemetry.begin();

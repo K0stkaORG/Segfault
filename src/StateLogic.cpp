@@ -1,10 +1,11 @@
 #include "StateLogic.h"
-
 #include "AvionicsConfig.h"
+#include "FlightLogger.h"
 
-void StateLogic::begin(PersistentStore &store, FlightFsm &fsm, MeasurementService &measurements) {
+void StateLogic::begin(PersistentStore &store, FlightFsm &fsm, MeasurementService &measurements, FlightLogger &logger) {
   store_ = &store;
   measurements_ = &measurements;
+  logger_ = &logger;
   fsm.registerListener(this);
   
   FlightState initial = fsm.currentState();
@@ -23,6 +24,7 @@ void StateLogic::begin(PersistentStore &store, FlightFsm &fsm, MeasurementServic
     flightStartTimeMs_ = 0;
     lastNvsWriteMs_ = 0;
   }
+  lastLogWriteMs_ = 0;
 }
 
 void StateLogic::onStateTransition(FlightState oldState, FlightState newState) {
@@ -50,6 +52,13 @@ void StateLogic::onStateTransition(FlightState oldState, FlightState newState) {
       }
     }
   }
+
+  // Erase partition exactly once upon transitioning to Armed state
+  if (newState == FlightState::Armed) {
+    if (logger_ != nullptr) {
+      logger_->erase();
+    }
+  }
 }
 
 void StateLogic::tick(uint32_t nowMs,
@@ -73,10 +82,11 @@ void StateLogic::tick(uint32_t nowMs,
       break;
     case FlightState::ApogeeReached:
       telemetry.setInterval(AvionicsConfig::TelemetryIntervalMs);
-      tickApogee(nowMs, fsm, parachute);
+      tickApogee(nowMs, fsm, measurement, parachute);
       break;
     case FlightState::ChuteDeployed:
       telemetry.setInterval(AvionicsConfig::TelemetryIntervalMs);
+      tickChuteDeployed(nowMs, fsm, measurement);
       break;
   }
 }
@@ -94,17 +104,15 @@ void StateLogic::tickBeforeLaunch(
 }
 
 void StateLogic::tickArmed(uint32_t nowMs, FlightFsm &fsm, const MeasurementSnapshot &measurement) {
-  /*
-  // KY-024 Breakaway Wire Logic (Disabled due to sensor issues)
-  if (!measurement.ky024.digital) { 
-     fsm.setState(FlightState::Flight);
-     return;
-  }
-  */
-
   if (measurements_ == nullptr) return;
 
-  float accelZ = (measurement.imu.accelZ_g - measurements_->getBaseline().accelZOffset_g) * 9.80665f;
+  // Logging condition 1: Armed mode AND accelZ > 1g above baseline
+  float compensatedAccelZ = (measurement.imu.accelZ_g - measurements_->getBaseline().accelZOffset_g);
+  if (compensatedAccelZ > AvionicsConfig::FlightLogArmedAccelThresholdG) {
+    tryLog(nowMs, fsm, measurement);
+  }
+
+  float accelZ = compensatedAccelZ * 9.80665f;
   
   if (accelZ > AvionicsConfig::LaunchAccelThresholdMps2) {
     if (highAccelStartMs_ == 0) {
@@ -118,6 +126,9 @@ void StateLogic::tickArmed(uint32_t nowMs, FlightFsm &fsm, const MeasurementSnap
 }
 
 void StateLogic::tickFlight(uint32_t nowMs, FlightFsm &fsm, const MeasurementSnapshot &measurement) {
+  // Logging condition 2: Flight mode (unconditional)
+  tryLog(nowMs, fsm, measurement);
+
   if (measurements_ == nullptr) return;
 
   if (measurement.aglAltitude_m > maxAltitude_m_) {
@@ -143,8 +154,29 @@ void StateLogic::tickFlight(uint32_t nowMs, FlightFsm &fsm, const MeasurementSna
   }
 }
 
-void StateLogic::tickApogee(uint32_t nowMs, FlightFsm &fsm, ParachuteServo &parachute) {
-  (void)nowMs;
+void StateLogic::tickApogee(uint32_t nowMs, FlightFsm &fsm, const MeasurementSnapshot &measurement, ParachuteServo &parachute) {
+  // Logging condition 3: Apogee mode (unconditional)
+  tryLog(nowMs, fsm, measurement);
+
   parachute.deploy();
   fsm.setState(FlightState::ChuteDeployed);
+}
+
+void StateLogic::tickChuteDeployed(uint32_t nowMs, FlightFsm &fsm, const MeasurementSnapshot &measurement) {
+  if (measurements_ == nullptr) return;
+
+  // Logging condition 4: Chute mode AND (accelZ > 1g OR accelZ < -1g)
+  float compensatedAccelZ = (measurement.imu.accelZ_g - measurements_->getBaseline().accelZOffset_g);
+  if (compensatedAccelZ > AvionicsConfig::FlightLogChuteAccelThresholdG || 
+      compensatedAccelZ < -AvionicsConfig::FlightLogChuteAccelThresholdG) {
+    tryLog(nowMs, fsm, measurement);
+  }
+}
+
+void StateLogic::tryLog(uint32_t nowMs, FlightFsm &fsm, const MeasurementSnapshot &measurement) {
+  if (logger_ == nullptr) return;
+  if (nowMs - lastLogWriteMs_ >= AvionicsConfig::FlightLogIntervalMs) {
+    lastLogWriteMs_ = nowMs;
+    logger_->log(nowMs, fsm, measurement);
+  }
 }
