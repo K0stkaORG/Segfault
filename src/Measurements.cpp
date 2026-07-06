@@ -202,7 +202,7 @@ bool MeasurementService::beginPmu() {
 }
 
 bool MeasurementService::readBmp280() {
-  snapshot_.temperatureC = bmp280_.readTemperature();
+  snapshot_.temperatureC = bmp280_.readTemperature() + AvionicsConfig::TemperatureOffsetC;
   snapshot_.pressurePa = bmp280_.readPressure();
   return snapshot_.pressurePa > 0.0f;
 }

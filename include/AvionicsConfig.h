@@ -29,6 +29,7 @@ constexpr uint8_t I2cSclPin = 22;
 constexpr uint32_t I2cClockHz = 400000;
 
 constexpr uint8_t Bmp280I2cAddress = 0x77;
+constexpr float TemperatureOffsetC = 0.0f;
 constexpr uint8_t Bmi270I2cAddress = 0x68;
 constexpr float Bmi270AccelLsbToG = 1.0f / 4096.0f;
 constexpr float Bmi270GyroLsbToDps = 1.0f / 16.4f;
