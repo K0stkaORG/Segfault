@@ -6,7 +6,7 @@ namespace AvionicsConfig {
 
 constexpr uint32_t SerialBaud = 115200;
 
-constexpr uint32_t TelemetryIntervalMs = 350;
+constexpr uint32_t TelemetryIntervalMs = 400;
 constexpr uint32_t BeforeLaunchHeartbeatIntervalMs = 10000;     // CHECK DEBUG INTERVAL!
 constexpr uint32_t MeasurementIntervalMs = 20;
 

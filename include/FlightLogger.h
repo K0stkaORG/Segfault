@@ -25,15 +25,16 @@ struct LogPacket {
   uint16_t rawPressure;
   uint16_t triboVoltage;
   uint8_t batteryVoltage;
-  uint8_t padding1; // Aligns gpsLatOffset on 2-byte boundary
+  uint8_t rawPressureExt; // Aligns gpsLatOffset on 2-byte boundary
 
   int16_t gpsLatOffset;
   int16_t gpsLonOffset;
   int16_t kfVerticalVelocity;
   uint16_t ky024Analog;
 
+  uint8_t gpsQuality;
+  int8_t temperature;
   uint16_t checksum; // Fletcher16 checksum
-  uint8_t padding2[2]; // Structural alignment (40-byte total size)
 };
 #pragma pack(pop)
 

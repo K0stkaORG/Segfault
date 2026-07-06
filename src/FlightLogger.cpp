@@ -113,11 +113,10 @@ bool FlightLogger::log(uint32_t nowMs, const FlightFsm &fsm, const MeasurementSn
   
   packet.kfAltitudeAgl = clamp16(measurement.aglAltitude_m * 10.0f);
   
-  // Scale raw pressure: mapping 80,000..112,767 Pa to 0..65,534 by subtracting 80,000 and dividing by 2 (matching scalePressure in Telemetry.cpp)
-  double rawP = (measurement.pressurePa - 80000.0) / 2.0;
-  if (rawP < 0.0) rawP = 0.0;
-  if (rawP > 65535.0) rawP = 65535.0;
-  packet.rawPressure = static_cast<uint16_t>(rawP);
+  // 24-bit raw pressure (0.1 Pa resolution)
+  uint32_t scaledPressure = static_cast<uint32_t>(measurement.pressurePa * 10.0f);
+  packet.rawPressure = scaledPressure & 0xFFFF;
+  packet.rawPressureExt = (scaledPressure >> 16) & 0xFF;
 
   packet.triboVoltage = static_cast<uint16_t>(measurement.ina226.busVoltageV * 1000.0f);
   
@@ -127,8 +126,6 @@ bool FlightLogger::log(uint32_t nowMs, const FlightFsm &fsm, const MeasurementSn
   batMv /= 10;
   if (batMv > 255) batMv = 255;
   packet.batteryVoltage = static_cast<uint8_t>(batMv);
-  
-  packet.padding1 = 0;
 
   // GPS
   if (measurement.gps.locationValid) {
@@ -145,12 +142,22 @@ bool FlightLogger::log(uint32_t nowMs, const FlightFsm &fsm, const MeasurementSn
   packet.kfVerticalVelocity = clamp16(measurement.verticalVelocity_mps * 10.0f);
   packet.ky024Analog = measurement.ky024.analog;
 
-  packet.checksum = 0;
-  packet.padding2[0] = 0;
-  packet.padding2[1] = 0;
+  // GPS Quality: sats (4 bits) | fix type (2 bits) | system flags (2 bits)
+  uint8_t sats = measurement.gps.satellites > 15 ? 15 : measurement.gps.satellites;
+  uint8_t fix = measurement.gps.fixValid ? 2 : (measurement.gps.locationValid ? 1 : 0);
+  uint8_t sysFlags = (measurement.bmp280Ok ? 1 : 0) | ((measurement.bmi270Ok ? 1 : 0) << 1);
+  packet.gpsQuality = (sats & 0x0F) | ((fix & 0x03) << 4) | ((sysFlags & 0x03) << 6);
 
-  // Compute Fletcher16 over the first 36 bytes of structural data
-  packet.checksum = calculateFletcher16(reinterpret_cast<const uint8_t*>(&packet), 36);
+  // BMP280 Temperature (8-bit signed int, 0.5 °C resolution, clamped to -64.0 to +63.5 °C)
+  float clampedTemp = measurement.temperatureC;
+  if (clampedTemp < -64.0f) clampedTemp = -64.0f;
+  if (clampedTemp > 63.5f) clampedTemp = 63.5f;
+  packet.temperature = static_cast<int8_t>(clampedTemp * 2.0f);
+
+  packet.checksum = 0;
+
+  // Compute Fletcher16 over the first 38 bytes of structural data
+  packet.checksum = calculateFletcher16(reinterpret_cast<const uint8_t*>(&packet), 38);
 
   // Push to queue without blocking (timeout = 0)
   BaseType_t ret = xQueueSend(queue_, &packet, 0);
