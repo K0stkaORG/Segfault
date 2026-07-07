@@ -57,6 +57,12 @@ void MeasurementService::tick(uint32_t nowMs) {
       kfState_.altitude_m = currentAltASL;
       kfState_.velocity_mps = 0.0f;
       kfInitialized_ = true;
+      if (isBaseliningEnabled_ && baseline_.groundAltitude_m == 0.0f) {
+        baseline_.groundAltitude_m = currentAltASL;
+      }
+      if (snapshot_.bmi270ReadOk && isBaseliningEnabled_ && baseline_.accelZOffset_g == 0.0f) {
+        baseline_.accelZOffset_g = snapshot_.imu.accelZ_g;
+      }
     }
 
     if (dt > 0.0f) {
