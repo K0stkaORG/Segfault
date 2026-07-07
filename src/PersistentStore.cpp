@@ -59,7 +59,9 @@ void PersistentStore::saveBaseline(const SensorBaseline &baseline) {
 
 void PersistentStore::saveElapsedFlightTime(uint32_t elapsedMs) {
   if (ready_) {
-    preferences_.putUInt("fl_elapsed", elapsedMs);
+    if (!AvionicsConfig::DisableFlightLogWrites) {
+      preferences_.putUInt("fl_elapsed", elapsedMs);
+    }
   }
 }
 

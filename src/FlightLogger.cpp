@@ -172,7 +172,9 @@ void FlightLogger::loggingTask(void* parameter) {
     if (xQueueReceive(logger->queue_, &packet, portMAX_DELAY) == pdPASS) {
       if (logger->partition_ != nullptr && logger->ready_) {
         if (logger->writeOffset_ + sizeof(LogPacket) <= logger->partition_->size) {
-          esp_partition_write(logger->partition_, logger->writeOffset_, &packet, sizeof(LogPacket));
+          if (!AvionicsConfig::DisableFlightLogWrites) {
+            esp_partition_write(logger->partition_, logger->writeOffset_, &packet, sizeof(LogPacket));
+          }
           logger->writeOffset_ += sizeof(LogPacket);
         } else {
           logger->ready_ = false; // Stop write triggers

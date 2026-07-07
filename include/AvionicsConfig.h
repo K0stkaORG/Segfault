@@ -12,6 +12,7 @@ constexpr uint32_t MeasurementIntervalMs = 20;
 
 constexpr bool EnableSerial = false;              // DEBUG ONLY!
 constexpr bool EnableTelemetrySerialDump = false; // DEBUG ONLY!
+constexpr bool DisableFlightLogWrites = true;    // DEBUG ONLY!
 
 constexpr long LoRaFrequencyHz = 439700000L;
 constexpr float LoRaFrequencyMHz = 439.7f;
