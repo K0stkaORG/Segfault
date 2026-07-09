@@ -7,12 +7,12 @@ namespace AvionicsConfig {
 constexpr uint32_t SerialBaud = 115200;
 
 constexpr uint32_t TelemetryIntervalMs = 400;
-constexpr uint32_t BeforeLaunchHeartbeatIntervalMs = 10000;     // CHECK DEBUG INTERVAL!
+constexpr uint32_t BeforeLaunchHeartbeatIntervalMs = 10000;
 constexpr uint32_t MeasurementIntervalMs = 20;
 
 constexpr bool EnableSerial = false;              // DEBUG ONLY!
 constexpr bool EnableTelemetrySerialDump = false; // DEBUG ONLY!
-constexpr bool DisableFlightLogWrites = true;    // DEBUG ONLY!
+constexpr bool DisableFlightLogWrites = false;    // DEBUG ONLY!
 
 constexpr long LoRaFrequencyHz = 439700000L;
 constexpr float LoRaFrequencyMHz = 439.7f;
@@ -64,20 +64,16 @@ constexpr int ParachuteServoStowedAngle = 0;
 constexpr int ParachuteServoDeployedAngle = 90;
 constexpr int ParachuteServoFrequencyHz = 50;
 
-//constexpr float LaunchAccelThresholdMps2 = 25.0f;
-constexpr float LaunchAccelThresholdMps2 = 0.5f; // DEBUG ONLY!
-//constexpr uint32_t LaunchAccelDurationMs = 100;
-constexpr uint32_t LaunchAccelDurationMs = 50; // DEBUG ONLY!
-//constexpr float ApogeeAltitudeDropM = 5.0f;
-constexpr float ApogeeAltitudeDropM = 1.0f; // DEBUG ONLY!
+constexpr float LaunchAccelThresholdMps2 = 25.0f;
+constexpr uint32_t LaunchAccelDurationMs = 100;
+constexpr float ApogeeAltitudeDropM = 5.0f;
 constexpr float ApogeeVelocityThresholdUpMps = 5.0f;
-//constexpr uint32_t ApogeeFailsafeTimerMs = 11400;
-constexpr uint32_t ApogeeFailsafeTimerMs = 11400; // DEBUG ONLY!
+constexpr uint32_t ApogeeFailsafeTimerMs = 11400;
 
-//constexpr double BaseLatitudeDeg = 49.7983333333;
-//constexpr double BaseLongitudeDeg = 16.6866666667;
-constexpr double BaseLatitudeDeg = 49.16100; // DEBUG ONLY!
-constexpr double BaseLongitudeDeg = 16.56133; // DEBUG ONLY!
+constexpr double BaseLatitudeDeg = 49.7983333333;
+constexpr double BaseLongitudeDeg = 16.6866666667;
+//constexpr double BaseLatitudeDeg = 49.16100; // DEBUG ONLY!
+//constexpr double BaseLongitudeDeg = 16.56133; // DEBUG ONLY!
 
 constexpr uint32_t FlightLogSyncWord = 0x5AA55AA5;
 constexpr uint32_t FlightLogIntervalMs = 40;
