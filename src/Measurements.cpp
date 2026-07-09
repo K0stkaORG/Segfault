@@ -174,6 +174,18 @@ bool MeasurementService::beginBmi270() {
     return false;
   }
 
+  // Configure Accelerometer range to 16g
+  struct bmi2_sens_config config;
+  config.type = BMI2_ACCEL;
+  err = bmi2_get_sensor_config(&config, 1, &bmi270Dev_);
+  if (err == BMI2_OK) {
+    config.cfg.acc.range = BMI2_ACC_RANGE_16G;
+    err = bmi2_set_sensor_config(&config, 1, &bmi270Dev_);
+  }
+  if (err != BMI2_OK) {
+    return false;
+  }
+
   uint8_t sensors[] = {BMI2_ACCEL, BMI2_GYRO};
   err = bmi270_sensor_enable(sensors, 2, &bmi270Dev_);
   return err == BMI2_OK;

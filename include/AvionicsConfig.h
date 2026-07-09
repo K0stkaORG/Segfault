@@ -12,7 +12,7 @@ constexpr uint32_t MeasurementIntervalMs = 20;
 
 constexpr bool EnableSerial = false;              // DEBUG ONLY!
 constexpr bool EnableTelemetrySerialDump = false; // DEBUG ONLY!
-constexpr bool DisableFlightLogWrites = false;    // DEBUG ONLY!
+constexpr bool DisableFlightLogWrites = true;    // DEBUG ONLY!
 
 constexpr long LoRaFrequencyHz = 439700000L;
 constexpr float LoRaFrequencyMHz = 439.7f;
@@ -32,9 +32,9 @@ constexpr uint32_t I2cClockHz = 400000;
 constexpr uint8_t Bmp280I2cAddress = 0x77;
 constexpr float TemperatureOffsetC = 0.0f;
 constexpr uint8_t Bmi270I2cAddress = 0x68;
-constexpr float Bmi270AccelLsbToG = 1.0f / 4096.0f;
+constexpr float Bmi270AccelLsbToG = 1.0f / 2048.0f;
 constexpr float Bmi270GyroLsbToDps = 1.0f / 16.4f;
-constexpr float Bmi270AccelGToLsbTelemetry = 16384.0f;
+constexpr float Bmi270AccelGToLsbTelemetry = 2048.0f;
 constexpr float Bmi270GyroDpsToLsbTelemetry = 16.4f;
 constexpr uint8_t Ina226I2cAddress = 0x40;
 
