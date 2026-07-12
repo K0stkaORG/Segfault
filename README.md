@@ -1,6 +1,6 @@
 # Segfault Rocket Avionics Firmware
 
-Highly optimized, cooperative, and non-blocking firmware for a TTGO T-Beam ESP32 board used as high-performance rocket avionics. 
+Firmware for a TTGO T-Beam ESP32 board used as rocket avionics. 
 
 The firmware implements real-time sensor ingestion, Kalman filtering, state-dependent flash logging, custom LoRa telemetry/remote control, and a localized WiFi Recovery access point for post-flight log downloads.
 
