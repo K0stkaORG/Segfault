@@ -1,194 +1,109 @@
 # Segfault Rocket Avionics Firmware
 
-Firmware skeleton for a TTGO T-Beam ESP32 used as rocket avionics. The current code initializes persistent storage, telemetry, and measurements, then runs a cooperative loop where measurements are refreshed, FSM logic is evaluated, and telemetry is sent when its configured interval expires.
+Highly optimized, cooperative, and non-blocking firmware for a TTGO T-Beam ESP32 board used as high-performance rocket avionics. 
+
+The firmware implements real-time sensor ingestion, Kalman filtering, state-dependent flash logging, custom LoRa telemetry/remote control, and a localized WiFi Recovery access point for post-flight log downloads.
 
-## Current Runtime Flow
+---
+
+## System Runtime Flow
 
-`src/main.cpp` owns the top-level orchestration:
+The top-level execution is orchestrated in `src/main.cpp`:
 
-1. Start Serial at `115200`.
-2. Open ESP32 NVS through `PersistentStore`.
-3. Attach NVS persistence to `FlightFsm`.
-4. Restore the saved FSM state, defaulting to `BeforeLaunch` if no valid state exists.
-5. Restore the telemetry packet counter.
-6. Initialize measurements: BMP280, BMI270, NEO-6M GPS UART, INA226, AXP2101 PMU, and KY-024 inputs.
-7. Initialize LoRa telemetry.
-8. Save current hardware init status into NVS.
-9. In `loop()`:
-   - `measurements.tick(nowMs)`
-   - `stateLogic.tick(nowMs, flightFsm, measurements.latest(), telemetry)`
-   - `telemetry.tick(nowMs, flightFsm, measurements.latest(), persistentStore)`
+1. **Setup Sequence**:
+   - Initializes Serial console (debug mode).
+   - Opens the non-volatile storage (NVS) flash partition.
+   - Restores the saved FSM state from NVS (defaults to `BeforeLaunch` if empty).
+   - Initializes hardware helper modules: `FlightLogger` and `RecoveryService`.
+   - Attaches NVS parameters to the `FlightFsm` and `StateLogic` controllers.
+   - Restores previous flight time and baseline parameters from NVS if booting into a post-launch state; otherwise, begins baseline calibration.
+   - Initializes sensor buses and hardware pins (I2C PMU, barometric pressure, IMU, GPS UART, current sensor, Hall inputs, and parachute servo).
+   - Initializes the LoRa radio module.
+2. **Main Execution Loop (`loop()`)**:
+   Runs a cooperative tick-based loop without blocking operations or synchronous delays:
+   - `measurements.tick(nowMs)`: Samples all hardware sensors at the configured rate and updates the state estimate.
+   - `stateLogic.tick(...)`: Evaluates transition conditions, updates FSM states, controls telemetry intervals, and drives the parachute servo.
+   - `telemetry.tick(...)`: Transmits packet telemetry via LoRa when the active interval expires.
+   - `remoteControl.tick(...)`: Listens for incoming LoRa command overrides from the ground station between telemetry periods.
 
-There are no flight transitions implemented yet. The only active FSM behavior is the `BeforeLaunch` state setting telemetry to the heartbeat interval.
+---
 
-## Modules
+## Finite State Machine (Flight FSM)
 
-### `AvionicsConfig`
+The avionics state is managed centrally by a state machine containing five states:
 
-Central constants for timing, pins, I2C addresses, LoRa settings, GPS settings, base location, and the NVS namespace.
+1. **`BeforeLaunch`**: Telemetry runs at a slow heartbeat rate. Baselining calibration is active to settle sensor noise.
+2. **`Armed`**: Telemetry runs at a slow heartbeat rate. State-dependent logging is active (recording only on acceleration events).
+3. **`Flight`**: High-rate telemetry is enabled. Flight logging runs unconditionally. Baselining calibration is locked.
+4. **`ApogeeReached`**: Triggers immediate deployment of the parachute servo, then transitions to ChuteDeployed.
+5. **`ChuteDeployed`**: High-rate telemetry is enabled. Flight logging is active only when falling. The local WiFi Recovery AP is active.
 
-Current important values:
+### State Transitions
 
-- Serial: `115200`
-- Measurement interval: `20 ms`
-- Before-launch heartbeat interval: `10000 ms`
-- Fast telemetry interval constant: `200 ms`
-- LoRa frequency: `439700000 Hz`
-- LoRa sync word: `0x67`
-- GPS: UART1, `9600` baud, RX `GPIO34`, TX `GPIO12`
-- I2C: SDA `GPIO21`, SCL `GPIO22`, `400 kHz`
+- **`BeforeLaunch` ➡️ `Armed`**: Initiated manually or via a remote control state command.
+- **`Armed` ➡️ `Flight`**: Automatically triggered when Z-axis vertical acceleration (compensated by the ground baseline) exceeds the configured launch threshold for the required minimum duration.
+- **`Flight` ➡️ `ApogeeReached`**: Automatically triggered when either:
+  - **Primary Trigger**: Filtered altitude falls below the maximum altitude reached by the configured drop margin, and the vertical velocity falls below the apogee threshold.
+  - **Backup Trigger**: The flight timer exceeds the apogee failsafe duration.
+- **`ApogeeReached` ➡️ `ChuteDeployed`**: Transitions automatically on the next clock cycle after command deployment is dispatched to the parachute servo.
 
-### `PersistentStore`
+### State-Transition Event Actions
 
-Thin wrapper around ESP32 `Preferences` / NVS.
+- **Entering `Armed`**: Automatically triggers a flash erase of the `flightlog` partition to clear old flight logs and prepare sectors for high-speed writes.
+- **Entering `Flight`**: Disables the sensor baselining calibration, locks the current ground altitude and gravity acceleration offsets, writes the baseline parameters to NVS, and starts the elapsed flight timer.
+- **Exiting `Flight` back to pre-launch states**: Re-enables the sensor baselining calibration.
+- **Entering `ChuteDeployed`**: Powers up the WiFi radio, configures the soft Access Point, and spins up the background web server task on Core 1.
+- **Exiting `ChuteDeployed`**: Shuts down the WiFi AP, closes the web server, and disables the WiFi radio.
 
-Persisted values:
+---
 
-- boot count
-- FSM state
-- telemetry packet counter
-- last hardware init status bitfield
+## Telemetry and Logging Services
 
-If NVS is unavailable, load operations fall back to safe defaults and save operations become no-ops.
+### LoRa Telemetry Transmission
+Telemetric snapshots are formatted and dispatched using non-blocking packet transmits over the LoRa transceiver. Telemetry intervals are dynamic and managed by the current FSM state (slow heartbeat pre-flight, fast telemetry during flight/descent).
 
-### `FlightFsm`
+The transmitted telemetry packet includes:
+- Frame sync words and timestamp offsets.
+- Active FSM state flags.
+- Raw IMU linear accelerations and angular gyro rates.
+- Kalman-filtered altitude (AGL).
+- Raw barometric pressure.
+- Triboelectric sensor probe voltage.
+- Main battery voltage.
+- GPS coordinates and fix quality.
+- Kalman-filtered vertical velocity.
+-KY-024 Hall sensor values.
 
-Holds the active flight state.
+### State-Dependent Flash Logging
+High-speed flight data is written to a dedicated raw SPI flash partition (`flightlog`). To conserve flash memory write cycles and queue buffers, logging uses state-dependent rules:
+- **`Armed`**: Logs only when Z-axis acceleration rises above the launch baseline.
+- **`Flight` & `ApogeeReached`**: Logs unconditionally at the high-frequency rate.
+- **`ChuteDeployed`**: Logs only when falling (vertical velocity is below a negative threshold).
 
-States currently defined:
+The log packet includes all telemetry parameters plus raw GPS satellites, GPS fix validity, system sensor health flags, internal board temperature, and is protected with a Fletcher16 checksum.
 
-- `BeforeLaunch`
-- `RBFRemoved`
-- `Flight`
-- `ApogeeReached`
-- `ChuteDeployed`
+---
 
-`FlightFsm::setState()` persists every state change after `attachPersistentStore()` has been called in setup. First boot defaults to `BeforeLaunch` through `PersistentStore::loadFlightState()`.
+## Baselining and Calibration
+Before launch, the avionics runs an exponential moving average over the barometric pressure and Z-axis accelerometer readings to establish a ground baseline (altitude above sea level and vertical gravity offset). 
 
-`stateFlags()` currently maps the telemetry flags as:
+When launch is detected, baselining is locked and stored in NVS. This baseline is used throughout the flight to compute:
+- Filtered AGL (above ground level) altitude.
+- Gravity-compensated vertical acceleration for the state estimator.
+- Re-baselining is allowed prior to launch via remote command.
 
-- bit 0: launch/flight has occurred
-- bit 1: apogee reached
-- bit 2: chute deployed
+---
 
-### `Measurements`
+## Remote Control Override System
+In between telemetry transmissions, the LoRa radio enters a non-blocking receive window to process incoming commands. Commands can override the autonomous logic to:
+- Deploy the parachute (forces servo to deploy angle).
+- Stow the parachute (forces servo to stow angle).
+- Set the active FSM state manually.
+- Trigger a sensor baseline reset (allowed only when not in flight).
 
-Owns sensor and input sampling.
+---
 
-Current sources:
+## Recovery Access Point & File Server
+Upon entering the `ChuteDeployed` state, the avionics spins up a WiFi soft Access Point and hosts a localized HTTP web server. 
 
-- BMP280 pressure and temperature over I2C
-- BMI270 raw accelerometer and gyroscope values over I2C using Bosch SensorAPI
-- NEO-6M GPS NMEA parsing over UART using TinyGPS++
-- INA226 bus/current/power telemetry over I2C
-- AXP2101 PMU battery voltage over I2C
-- KY-024 analog Hall sensor ADC
-
-`MeasurementService::tick()` runs at `AvionicsConfig::MeasurementIntervalMs`. GPS parsing is bounded by `MaxGpsBytesPerTick` so one tick cannot drain an unbounded UART backlog.
-
-The current `MeasurementSnapshot` contains latest sensor health flags, latest sensor read flags, raw IMU values, pressure, temperature, GPS fix data, INA226 values, AXP2101 battery millivolts, and KY-024 values.
-
-### `StateLogic`
-
-Contains per-state decisions. It currently implements only `BeforeLaunch`.
-
-Current `BeforeLaunch` behavior:
-
-- keep the current FSM state unchanged
-- set telemetry to `BeforeLaunchHeartbeatIntervalMs`
-
-### `Telemetry`
-
-Owns LoRa setup, telemetry packet packing, send scheduling, packet counter management, and packet-counter persistence after successful send.
-
-Current packet format is the packed `RocketTelemetry` struct from `defvals.txt`. It is checked with:
-
-```cpp
-static_assert(sizeof(RocketTelemetry) == 29, "RocketTelemetry must be 29 bytes");
-```
-
-The `batteryVoltage` byte is encoded from AXP2101 battery millivolts in `20 mV` units. A receiver decodes it as `batteryVoltage * 20`.
-
-Telemetry scheduling is controlled by:
-
-- `telemetry.setInterval(intervalMs)`
-- `telemetry.disable()`
-- `telemetry.tick(nowMs, fsm, measurement, persistentStore)`
-
-`TelemetryService::tick()` checks whether the timeout has fired, builds a packet from the latest FSM state and measurement snapshot, sends it over LoRa, and persists the packet counter after successful send.
-
-Transmission uses RadioLib `startTransmit()` with the SX1262 packet-sent callback. Every accepted packet is also printed to Serial as a hex byte dump.
-
-## Non-Blocking Behavior
-
-Runtime code is cooperative and tick-based. The main loop does not use `delay()` and does not wait for telemetry or GPS data.
-
-Bounded/non-blocking parts:
-
-- telemetry is scheduled by timestamp
-- LoRa TX uses RadioLib async `startTransmit()`
-- GPS parser consumes at most `MaxGpsBytesPerTick` bytes per measurement tick
-- missing sensors do not stop the firmware
-
-Known synchronous parts:
-
-- BMP280 reads are synchronous I2C calls
-- BMI270 reads are synchronous I2C calls
-- ADC reads are synchronous
-- AXP2101 battery voltage reads are synchronous I2C calls
-- NVS writes happen when FSM state changes and after successful telemetry sends
-- Serial byte dumps can slow down telemetry during testing
-
-## Persistence and Restart Behavior
-
-On restart:
-
-- boot count increments
-- FSM state is restored from NVS, or defaults to `BeforeLaunch`
-- packet counter is restored from NVS
-- telemetry interval is not persisted; it is derived again by `StateLogic` from the restored FSM state
-
-State transitions must use `flightFsm.setState(...)` so the new state is persisted.
-
-## Current Build Dependencies
-
-Declared in `platformio.ini`:
-
-- `jgromes/RadioLib`
-- `adafruit/Adafruit BMP280 Library`
-- `adafruit/Adafruit Unified Sensor`
-- `sparkfun/SparkFun BMI270 Arduino Library`
-- `mikalhart/TinyGPSPlus`
-- `wollewald/INA226_WE`
-- `lewisxhe/XPowersLib`
-
-## Current Hardware Assumptions
-
-Board:
-
-- PlatformIO environment: `ttgo-t-beam`
-- Framework: Arduino
-
-Radio:
-
-- SX1262 LoRa module through RadioLib
-- SPI pins from `AvionicsConfig`
-- DIO1 and BUSY pins from `AvionicsConfig`
-- frequency `439700000 Hz`
-
-Sensors:
-
-- BMP280 at I2C address `0x77`
-- BMI270 at I2C address `0x68`
-- NEO-6M GPS on UART1
-- INA226 at I2C address `0x40`
-- AXP2101 PMU for 18650 battery voltage monitoring
-
-Inputs/outputs:
-
-- KY-024 analog input: `GPIO4`
-- KY-024 digital input: `GPIO14`
-
-## Current Limitations
-
-No flight detection, RBF logic, apogee detection, parachute deployment, buzzer behavior, filtering, or calibration logic has been implemented yet.
+Connecting to the AP and requesting the root URL starts a raw binary stream of the entire flash logging partition as a file download. The server processes downloads in small blocks, yielding to the system task scheduler to prevent triggering the hardware watchdog timer during transfer.

@@ -1,68 +1,57 @@
 # Include Directory
 
-This directory contains the public interfaces for the firmware modules.
+This directory contains the public interfaces for the rocket avionics firmware modules.
 
 ## Headers
 
 ### `AvionicsConfig.h`
-
-Central configuration for constants used across the firmware:
-
-- serial baud rate
-- measurement and telemetry intervals
-- LoRa frequency, sync word, and pins
-- I2C pins, clock, and sensor addresses
-- GPS UART pins and parser budget
-- KY-024 input pins
-- base GPS location
-- NVS namespace
+Central configuration namespace defining system-wide constants:
+- Serial console settings.
+- Sampling and transmission intervals.
+- LoRa radio frequencies, sync words, and SPI pin assignments.
+- I2C bus pins, speeds, and device sensor addresses.
+- GPS hardware pins and parsing budget parameters.
+- KY-024 Hall sensor pin mappings.
+- Servo control pulse widths and angles.
+- State-machine thresholds and failsafe timers.
+- Recovery Access Point credentials and IP parameters.
 
 ### `FlightFsm.h`
+Defines the `FlightState` enum (BeforeLaunch, Armed, Flight, ApogeeReached, ChuteDeployed) and the `FlightFsm` class. 
 
-Defines `FlightState` and the `FlightFsm` class.
+The FSM tracks the active flight state and registers listeners to trigger hardware events during state transitions. All changes are persisted to NVS.
 
-`FlightFsm` stores the current state and persists changes after a `PersistentStore` has been attached. Use `setState()` for transitions; do not add separate state variables elsewhere.
+### `FlightLogger.h`
+Defines the `LogPacket` struct and the `FlightLogger` service.
+
+* **LogPacket**: Exactly 40 bytes, packed to 1-byte alignment. Contains frame markers, timestamp offsets, state flags, raw IMU values, Kalman-filtered altitude and vertical speed, raw pressure, battery voltage, GPS offset coords, Hall values, GPS quality, board temperature, and a Fletcher16 checksum.
+* **FlightLogger**: Erases the partition and manages a FreeRTOS task that pulls log packets from a queue to write them asynchronously to the SPI flash partition.
+
+### `LoRaRadio.h`
+Declares the global RadioLib radio object to share the SX1262 LoRa module between the Telemetry sender and RemoteControl receiver.
 
 ### `Measurements.h`
+Defines sensor sample data structures and the `MeasurementService`.
 
-Defines measurement data structures and `MeasurementService`.
+The service reads the physical sensors (barometer, IMU, GPS, current sensor, PMU, Hall sensor) and runs a Kalman Filter estimating above-ground-level (AGL) altitude and vertical speed, utilizing a pre-flight exponential moving average ground baseline.
 
-Important structures:
-
-- `Bmi270RawSample`
-- `GpsSample`
-- `Ina226Sample`
-- `Ky024Sample`
-- `MeasurementSnapshot`
-
-`MeasurementSnapshot` is the data passed into FSM logic and telemetry. New measured values should be added here only when they are part of the shared avionics state.
+### `ParachuteServo.h`
+Defines the `ParachuteServo` class. Coordinates stowing and deploying the parachute recovery mechanism.
 
 ### `PersistentStore.h`
+A thin wrapper around ESP32 Preferences/NVS. Persists the FSM state, sensor ground baselines, and elapsed flight time to survive mid-flight power cuts.
 
-Defines the NVS wrapper used for data that must survive resets:
+### `RecoveryService.h`
+Defines the `RecoveryService` class. Starts the soft WiFi AP and web server, and manages streaming the raw flash logs back to the recovery team.
 
-- boot count
-- FSM state
-- packet counter
-- hardware init status
+### `RemoteControl.h`
+Defines the `RemoteControlService` class. Processes remote commands received over LoRa.
 
 ### `StateLogic.h`
-
-Defines the FSM behavior layer.
-
-`StateLogic::tick()` receives current time, FSM state, latest measurements, and telemetry control. It currently implements the `BeforeLaunch` heartbeat behavior.
+Defines the FSM transition scheduler. Evaluates sensors and timings to drive FSM state transitions, controls the telemetry rate, and handles parachute servo trigger and recovery AP events.
 
 ### `Telemetry.h`
+Defines the `RocketTelemetry` struct and the `TelemetryService`.
 
-Defines the packed telemetry packet and `TelemetryService`.
-
-`TelemetryService` owns:
-
-- LoRa initialization
-- packet counter
-- telemetry interval
-- send timeout
-- packet packing
-- packet-counter persistence after successful send
-
-The telemetry packet is 29 bytes and is checked at compile time with `static_assert`.
+* **RocketTelemetry**: Exactly 33 bytes, packed to 1-byte alignment. Transmits telemetric variables including IMU, GPS offsets, Kalman altitude/velocity, and Hall sensor voltages.
+* **TelemetryService**: Manages the LoRa transceiver timing scheduler andasync transmissions.
